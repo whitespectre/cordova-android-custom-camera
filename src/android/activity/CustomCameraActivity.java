@@ -8,7 +8,6 @@ import android.os.Bundle;
 import java.io.IOException;
 import java.lang.Exception;
 import android.util.Log;
-
 import android.hardware.Camera;
 import android.view.SurfaceView;
 import android.view.SurfaceHolder;
@@ -46,6 +45,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   private ImageButton flashOffButton;
   private ImageButton startRecordingButton;
   private ImageButton stopRecordingButton;
+  private Button cancelRecordingButton;
   private int currentView = 0;
   private TextView timerText;
   private CountDownTimer currentCounter;
@@ -111,12 +111,11 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
         }
     });
 
-    
     stopRecordingButton = (ImageButton) findViewById(fakeR.getId("id", "stopRecordingButton"));
     stopRecordingButton.setOnClickListener( new OnClickListener() {
       @Override
       public void onClick(View v) {
-        stopRecording(false);
+        stopRecording(true);
       }
     });
 
@@ -134,11 +133,19 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
         startTimer();
         recording = true;
         // show buttons
+        cancelRecordingButton.setVisibility(View.GONE);
         startRecordingButton.setVisibility(View.GONE);
         stopRecordingButton.setVisibility(View.VISIBLE);         
       }
     });
 
+    cancelRecordingButton = (Button) findViewById(fakeR.getId("id", "cancelRecording"));
+    cancelRecordingButton.setOnClickListener( new OnClickListener() {
+      @Override
+      public void onClick(View v) {            
+        cancelRecordingProcess();
+      }
+    });
   }
 
   @Override
@@ -153,7 +160,15 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     super.onStop();
   }
 
-  public void stopRecording(boolean deleteFile) {
+  public void cancelRecordingProcess() {
+    stopRecording(false);
+    camera.stopPreview();
+    Intent data = new Intent();
+    setResult(RESULT_CANCELED, data);
+    finish();
+  }
+
+  public void stopRecording(boolean finished) {
     if(recording == true) {
       timerText.setText("3:00");
       recordingDot.setVisibility(View.GONE);
@@ -167,13 +182,24 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
       // show buttons
       stopRecordingButton.setVisibility(View.GONE);
       startRecordingButton.setVisibility(View.VISIBLE);
+      cancelRecordingButton.setVisibility(View.VISIBLE);
+
+      if(finished) {
+        Intent data = new Intent();
+        data.putExtra("videoUrl", currentFileName.toString());
+        setResult(RESULT_OK, data);
+        finish();
+      } else {
+        File file = new File(currentFileName.toString());
+        file.delete();
+      }
     }
   }
 
   @Override
   public void onPause() {
     super.onPause();
-    stopRecording(true);
+    stopRecording(false);
     camera.stopPreview();
     setFlashButtons(true, false);
   }
@@ -197,6 +223,20 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     } else {
       flashOffButton.setVisibility(View.GONE);
     }
+  }
+
+  public void surfaceChanged(SurfaceHolder holder, int arg1, int arg2, int arg3) {
+      startPreview(holder);
+  }
+
+  public void surfaceDestroyed(SurfaceHolder holder) {
+    if(mediaRecorder != null) {
+      mediaRecorder.stop();
+      File file = new File(currentFileName.toString());
+      file.delete();
+    }
+    camera.stopPreview();
+    camera.release();
   }
 
   private void switchView() {
@@ -314,21 +354,6 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
       camera.release();
   }
 
-  public void surfaceChanged(SurfaceHolder holder, int arg1, int arg2, int arg3) {
-      startPreview(holder);
-  }
-
-
-  public void surfaceDestroyed(SurfaceHolder holder) {
-    if(mediaRecorder != null) {
-      mediaRecorder.stop();
-      File file = new File(currentFileName.toString());
-      file.delete();
-    }
-    camera.stopPreview();
-    camera.release();
-  }
-
   private File initFile() {
       File dir = new File(Environment.getExternalStorageDirectory(), "My Challenge Tracker");
       File file = null;
@@ -337,7 +362,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
           file = null;
       } else {
           file = new File(dir.getAbsolutePath(), new SimpleDateFormat(
-                  "'IMG_'yyyyMMddHHmmss'.mp4'").format(new Date()));
+            "'IMG_'yyyyMMddHHmmss'.mp4'").format(new Date()));
           currentFileName = Uri.fromFile(file);
       }
       return file;
@@ -356,8 +381,6 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
 
 
   private void initRecorder(Surface surface) throws IOException {
-      // It is very important to unlock the camera before doing setCamera
-      // or it will results in a black preview
       camera.unlock();
 
       if (mediaRecorder == null) {
@@ -380,8 +403,6 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
 
       mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
       mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-      // 270 para portrait frontal
-      // 180 para landscape frontal
       mediaRecorder.setOrientationHint(getRecordingAngle());
 
       try {

@@ -5,7 +5,6 @@ import org.apache.cordova.CallbackContext;
 
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -42,8 +41,7 @@ public class AndroidCamera extends CordovaPlugin {
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
       if (resultCode == Activity.RESULT_OK && data != null) {
-        JSONArray res = new JSONArray();
-        this.callbackContext.success(res);
+        this.callbackContext.success(data.getStringExtra("videoUrl"));
       } else {
         this.callbackContext.error("No video recorded");
       }
