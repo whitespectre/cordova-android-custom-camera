@@ -33,6 +33,7 @@ import android.widget.ImageButton;
 import android.view.OrientationEventListener;
 import android.content.Context;
 
+
 public class CustomCameraActivity extends Activity implements SurfaceHolder.Callback {
   private FakeR fakeR;
   private MediaRecorder mediaRecorder;
@@ -54,6 +55,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   private boolean isBackCamera = true;
   private OrientationListener orientationListener;
   private int rotation;
+  
 
   Camera camera;
   SurfaceView surfaceView;
@@ -68,13 +70,18 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     setContentView(fakeR.getId("layout", "custom_camera"));
 
     recordingDot = (View)findViewById(fakeR.getId("id", "recordingDot"));
-
     surfaceView = (SurfaceView)findViewById(fakeR.getId("id", "surfaceView"));
     surfaceHolder = surfaceView.getHolder();
     surfaceHolder.addCallback(this);
     surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-    
+
     this.startCamera(0, false);
+
+    //get params
+    String paramCancelText = getIntent().getStringExtra("CANCEL_TEXT");
+    String tooltip = getIntent().getStringExtra("TOOLTIP");
+
+    Toast.makeText(this, tooltip, Toast.LENGTH_LONG).show();
 
     //orientation listener
     orientationListener = new OrientationListener(this);
@@ -140,6 +147,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     });
 
     cancelRecordingButton = (Button) findViewById(fakeR.getId("id", "cancelRecording"));
+    cancelRecordingButton.setText(paramCancelText);
     cancelRecordingButton.setOnClickListener( new OnClickListener() {
       @Override
       public void onClick(View v) {            
@@ -313,22 +321,22 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
 
   private void startCamera(int cameraView, boolean isFlashOn)
   {
-      this.isFlashOn = isFlashOn;
-      try{
-          camera = Camera.open(cameraView);
-      }catch(RuntimeException e){
-        return;
-      }
-      Camera.Parameters param = camera.getParameters();
-      if (isFlashOn) {
-        param.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);  
-      }
-      if (param.getSupportedFocusModes().contains(
-          Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO)) {
-        param.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
-      }
-      setCameraOrientation();
-      camera.setParameters(param);
+    this.isFlashOn = isFlashOn;
+    try{
+        camera = Camera.open(cameraView);
+    }catch(RuntimeException e){
+      return;
+    }
+    Camera.Parameters param = camera.getParameters();
+    if (isFlashOn) {
+      param.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);  
+    }
+    if (param.getSupportedFocusModes().contains(
+        Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO)) {
+      param.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
+    }
+    setCameraOrientation();
+    camera.setParameters(param);
       
   }
 
@@ -350,22 +358,23 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
 
   private void stopCamera()
   {
-      camera.stopPreview();
-      camera.release();
+    camera.stopPreview();
+    camera.release();
   }
 
   private File initFile() {
-      File dir = new File(Environment.getExternalStorageDirectory(), "My Challenge Tracker");
-      File file = null;
+    String libraryFolder = getIntent().getStringExtra("LIBRARY_FOLDER");
+    File dir = new File(Environment.getExternalStorageDirectory(), libraryFolder);
+    File file = null;
 
-      if (!dir.exists() && !dir.mkdirs()) {
-          file = null;
-      } else {
-          file = new File(dir.getAbsolutePath(), new SimpleDateFormat(
-            "'IMG_'yyyyMMddHHmmss'.mp4'").format(new Date()));
-          currentFileName = Uri.fromFile(file);
-      }
-      return file;
+    if (!dir.exists() && !dir.mkdirs()) {
+        file = null;
+    } else {
+        file = new File(dir.getAbsolutePath(), new SimpleDateFormat(
+          "'IMG_'yyyyMMddHHmmss'.mp4'").format(new Date()));
+        currentFileName = Uri.fromFile(file);
+    }
+    return file;
   }
 
   @Override
@@ -381,37 +390,37 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
 
 
   private void initRecorder(Surface surface) throws IOException {
-      camera.unlock();
+    camera.unlock();
 
-      if (mediaRecorder == null) {
-        mediaRecorder = new MediaRecorder();
-      }
+    if (mediaRecorder == null) {
+      mediaRecorder = new MediaRecorder();
+    }
 
-      mediaRecorder.setPreviewDisplay(surface);
-      mediaRecorder.setCamera(camera);
-      mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
-      mediaRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
-      mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4); 
-      mediaRecorder.setOutputFile(this.initFile().getAbsolutePath());
+    mediaRecorder.setPreviewDisplay(surface);
+    mediaRecorder.setCamera(camera);
+    mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
+    mediaRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
+    mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4); 
+    mediaRecorder.setOutputFile(this.initFile().getAbsolutePath());
 
-      // No limit. Don't forget to check the space on disk.
-      mediaRecorder.setMaxDuration(180000);
-      mediaRecorder.setVideoFrameRate(30);
-      mediaRecorder.setVideoSize(640, 480);
-      mediaRecorder.setVideoEncodingBitRate(3000000);
-      mediaRecorder.setAudioEncodingBitRate(8000);
+    // No limit. Don't forget to check the space on disk.
+    mediaRecorder.setMaxDuration(180000);
+    mediaRecorder.setVideoFrameRate(30);
+    mediaRecorder.setVideoSize(640, 480);
+    mediaRecorder.setVideoEncodingBitRate(3000000);
+    mediaRecorder.setAudioEncodingBitRate(8000);
 
-      mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
-      mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-      mediaRecorder.setOrientationHint(getRecordingAngle());
+    mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
+    mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+    mediaRecorder.setOrientationHint(getRecordingAngle());
 
-      try {
-          mediaRecorder.prepare();
-      } catch (IllegalStateException e) {
-          e.printStackTrace();
-      }
+    try {
+        mediaRecorder.prepare();
+    } catch (IllegalStateException e) {
+        e.printStackTrace();
+    }
 
-      initSuccessfull = true;
+    initSuccessfull = true;
   }
 
   private int getRecordingAngle() {
@@ -441,22 +450,15 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     public OrientationListener(Context context) { super(context); }
 
     @Override public void onOrientationChanged(int orientation) {
-        if( (orientation < 35 || orientation > 325) && rotation != Surface.ROTATION_0){ // PORTRAIT
-            rotation = Surface.ROTATION_0;
-            Log.d("orientation", "***************************** ROTATION_O");
-        }
-        else if( orientation > 145 && orientation < 215 && rotation != Surface.ROTATION_180){ // REVERSE PORTRAIT
-            rotation = Surface.ROTATION_180;
-            Log.d("orientation", "***************************** ROTATION_180");
-        }
-        else if(orientation > 55 && orientation < 125 && rotation != Surface.ROTATION_270){ // REVERSE LANDSCAPE
-            rotation = Surface.ROTATION_270;
-            Log.d("orientation", "***************************** ROTATION_270");
-        }
-        else if(orientation > 235 && orientation < 305 && rotation != Surface.ROTATION_90){ //LANDSCAPE
-            rotation = Surface.ROTATION_90;
-            Log.d("orientation", "***************************** ROTATION_90");
-        }
+      if( (orientation < 35 || orientation > 325) && rotation != Surface.ROTATION_0){
+          rotation = Surface.ROTATION_0;
+      } else if( orientation > 145 && orientation < 215 && rotation != Surface.ROTATION_180){
+          rotation = Surface.ROTATION_180;
+      } else if(orientation > 55 && orientation < 125 && rotation != Surface.ROTATION_270){
+          rotation = Surface.ROTATION_270;
+      } else if(orientation > 235 && orientation < 305 && rotation != Surface.ROTATION_90){
+          rotation = Surface.ROTATION_90;
+      }
     }
   }
 }

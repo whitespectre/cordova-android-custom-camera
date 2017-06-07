@@ -21,19 +21,20 @@ public class AndroidCamera extends CordovaPlugin {
 
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
-        Log.d(TAG, "Getting inside execute");
         this.callbackContext = callbackContext;
         if (action.equals("recordVideo")) {
-            Log.d(TAG, "Executing function");
-            this.recordVideo(callbackContext);
+            this.recordVideo(callbackContext, args);
             return true;
         }
         return false;
     }
 
-    private void recordVideo(CallbackContext callbackContext) {
-        
+    private void recordVideo(CallbackContext callbackContext, JSONArray args) throws JSONException {
         Intent intent = new Intent(cordova.getActivity(), CustomCameraActivity.class);
+        intent.putExtra("LIBRARY_FOLDER", args.getString(0));
+        intent.putExtra("CANCEL_TEXT", args.getString(1));
+        intent.putExtra("TOOLTIP", args.getString(2));
+
         if (this.cordova != null) {
           this.cordova.startActivityForResult((CordovaPlugin) this, intent, 0);
         }
