@@ -31,9 +31,8 @@ import android.os.CountDownTimer;
 import android.widget.TextView;
 import java.util.concurrent.TimeUnit;
 import android.widget.ImageButton;
-
-//surface view 
-// (GridView) findViewById(fakeR.getId("id", "surfaceView"));
+import android.view.OrientationEventListener;
+import android.content.Context;
 
 public class CustomCameraActivity extends Activity implements SurfaceHolder.Callback {
   private FakeR fakeR;
@@ -53,6 +52,8 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   private View recordingDot;
   private boolean isFlashOn = false;
   private boolean isBackCamera = true;
+  private OrientationListener orientationListener;
+  private int rotation;
 
   Camera camera;
   SurfaceView surfaceView;
@@ -74,6 +75,9 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
     
     this.startCamera(0, false);
+
+    //orientation listener
+    orientationListener = new OrientationListener(this);
 
     //init buttons
     timerText = (TextView) findViewById(fakeR.getId("id", "recordingTimer"));
@@ -121,7 +125,6 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
       @Override
       public void onClick(View v) {            
         setFlashButtons(false, false);
-        lockOrientation();
         try {
             initRecorder(surfaceHolder.getSurface());
         } catch (IOException e) {
@@ -138,6 +141,18 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
 
   }
 
+  @Override
+  public void onStart() {
+    orientationListener.enable();
+    super.onStart();
+  }
+
+  @Override 
+  protected void onStop() {
+    orientationListener.disable();
+    super.onStop();
+  }
+
   public void stopRecording(boolean deleteFile) {
     if(recording == true) {
       timerText.setText("3:00");
@@ -147,7 +162,6 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
       mediaRecorder.stop();
       currentCounter.cancel();
       refreshLibrary();
-      unlockOrientation();
       recording = false;
       mediaRecorder = null;
       // show buttons
@@ -234,48 +248,6 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     currentCounter.start();
   }
 
-  private void lockOrientation() {
-    int rotation = getWindowManager().getDefaultDisplay().getRotation();
-
-    switch(rotation) {
-    case Surface.ROTATION_180:
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT);
-        break;
-    case Surface.ROTATION_270:
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);         
-        break;
-    case  Surface.ROTATION_0:
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        break;
-    case Surface.ROTATION_90:
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        break;
-    }
-  }
-
-  private int getRecordingAngle() {
-    int angle = 0;
-    int rotation = getWindowManager().getDefaultDisplay().getRotation();
-    switch(rotation) {
-    case Surface.ROTATION_180:
-        angle = 90;
-        break;
-    case Surface.ROTATION_270:
-        angle = 180;
-        break;
-    case  Surface.ROTATION_0:
-        angle = 90;
-        if (!this.isBackCamera) {
-          angle = 270;
-        }
-        break;
-    case Surface.ROTATION_90:
-        angle = 0;
-        break;
-    }
-    return angle;
-  }
-
   private void setCameraOrientation() {
     int rotation = getWindowManager().getDefaultDisplay().getRotation();
     camera.stopPreview();
@@ -297,10 +269,6 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
         break;
     }
     camera.startPreview();
-  }
-
-  private void unlockOrientation() {
-    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
   }
 
   private void startCamera(int cameraView, boolean isFlashOn)
@@ -423,5 +391,51 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
       }
 
       initSuccessfull = true;
+  }
+
+  private int getRecordingAngle() {
+    int angle = 0;
+    //int rotation = getWindowManager().getDefaultDisplay().getRotation();
+    switch(rotation) {
+    case Surface.ROTATION_180:
+        angle = 90;
+        break;
+    case Surface.ROTATION_270:
+        angle = 180;
+        break;
+    case Surface.ROTATION_0:
+        angle = 90;
+        if (!this.isBackCamera) {
+          angle = 270;
+        }
+        break;
+    case Surface.ROTATION_90:
+        angle = 0;
+        break;
+    }
+    return angle;
+  }
+
+  private class OrientationListener extends OrientationEventListener{
+    public OrientationListener(Context context) { super(context); }
+
+    @Override public void onOrientationChanged(int orientation) {
+        if( (orientation < 35 || orientation > 325) && rotation != Surface.ROTATION_0){ // PORTRAIT
+            rotation = Surface.ROTATION_0;
+            Log.d("orientation", "***************************** ROTATION_O");
+        }
+        else if( orientation > 145 && orientation < 215 && rotation != Surface.ROTATION_180){ // REVERSE PORTRAIT
+            rotation = Surface.ROTATION_180;
+            Log.d("orientation", "***************************** ROTATION_180");
+        }
+        else if(orientation > 55 && orientation < 125 && rotation != Surface.ROTATION_270){ // REVERSE LANDSCAPE
+            rotation = Surface.ROTATION_270;
+            Log.d("orientation", "***************************** ROTATION_270");
+        }
+        else if(orientation > 235 && orientation < 305 && rotation != Surface.ROTATION_90){ //LANDSCAPE
+            rotation = Surface.ROTATION_90;
+            Log.d("orientation", "***************************** ROTATION_90");
+        }
+    }
   }
 }
