@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_height="fill_parent"
+    android:layout_width="fill_parent"
+    android:orientation="vertical" >
+
+    <SurfaceView
+        android:layout_width="match_parent"
+        android:layout_height="fill_parent"
+        android:id="@+id/surfaceView"
+        android:layout_gravity="left|center_vertical"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:gravity="center|bottom"
+        android:orientation="vertical" >
+        <ImageButton
+            android:id="@+id/recordingButton"
+            android:background="@android:color/transparent"
+            android:scaleType="fitCenter"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginBottom="12dp"
+            android:src="@drawable/start_record_btn" />
+        <ImageButton
+            android:id="@+id/stopRecordingButton"
+            android:background="@android:color/transparent"
+            android:scaleType="fitCenter"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:visibility="gone"
+            android:layout_marginBottom="12dp"
+            android:src="@drawable/stop_recording_btn" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="12dp"
+        android:gravity="center|center"
+        android:layout_height="wrap_content">
+        <View 
+          android:id="@+id/recordingDot"
+          android:layout_width="15dp"
+          android:layout_height="15dp"
+          android:layout_marginRight="5dp"
+          android:visibility="gone"
+          android:background="@drawable/dot_shape"/>
+        <TextView
+          android:id="@+id/recordingTimer"
+          android:layout_width="wrap_content"
+          android:layout_height="40dp"
+          android:gravity="center"
+          android:text="3:00"
+          android:textAppearance="?android:attr/textAppearanceLarge"
+           />
+    </LinearLayout>
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="12dp"
+        android:gravity="right|center"
+        android:layout_height="wrap_content">
+        <ImageButton
+            android:id="@+id/switchViewButton"
+            android:background="@android:color/transparent"
+            android:scaleType="fitCenter"
+            android:padding="10dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/camera_toggle" />
+    </RelativeLayout>
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="12dp"
+        android:gravity="left|center"
+        android:layout_height="wrap_content">
+        <ImageButton
+            android:id="@+id/flashButton"
+            android:background="@android:color/transparent"
+            android:scaleType="fitCenter"
+            android:padding="10dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/flash_settings_icon" />
+        <ImageButton
+            android:id="@+id/flashOffButton"
+            android:background="@android:color/transparent"
+            android:scaleType="fitCenter"
+            android:padding="10dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:visibility="gone"
+            android:src="@drawable/flash_off_icon" />
+    </RelativeLayout>
+</RelativeLayout>

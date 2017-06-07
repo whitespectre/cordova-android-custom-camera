@@ -1,0 +1,10 @@
+{
+    "cordova-android-custom-camera": {
+        "source": {
+            "type": "local",
+            "path": "../AndroidCamera"
+        },
+        "is_top_level": true,
+        "variables": {}
+    }
+}

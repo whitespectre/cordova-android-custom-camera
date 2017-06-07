@@ -1,0 +1,34 @@
+<?xml version='1.0' encoding='utf-8'?>
+<plugin id="cordova-android-custom-camera" version="0.0.1" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+  <name>AndroidCamera</name>
+  <js-module name="AndroidCamera" src="www/AndroidCamera.js">
+    <clobbers target="plugins.AndroidCamera" />
+  </js-module>
+  <platform name="android">
+    <config-file parent="/*" target="res/xml/config.xml">
+      <feature name="AndroidCamera"><param name="android-package" value="com.cga.AndroidCamera" /></feature>
+    </config-file>
+    <config-file target="AndroidManifest.xml" parent="/manifest/application">
+        <activity 
+          android:configChanges="orientation|screenSize" 
+          android:screenOrientation="portrait"
+          android:label="@string/multi_app_name" 
+          android:name="com.cga.CustomCameraActivity" 
+          android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen">
+        </activity>
+    </config-file>
+    <config-file parent="/*" target="AndroidManifest.xml">    
+    </config-file>
+    <source-file src="src/android/AndroidCamera.java" target-dir="src/com/cga" />
+    <source-file src="src/android/activity/CustomCameraActivity.java" target-dir="src/com/cga"/>
+    <source-file src="src/android/activity/FakeR.java" target-dir="src/com/cga" />
+    <source-file src="src/android/activity/custom_camera.xml" target-dir="res/layout"/>
+    <source-file src="src/android/res/values/customcamera_strings_en.xml" target-dir="res/values"/>
+    <source-file src="src/android/res/drawable/camera_toggle.png" target-dir="res/drawable"/>
+    <source-file src="src/android/res/drawable/flash_off_icon.png" target-dir="res/drawable"/>
+    <source-file src="src/android/res/drawable/flash_settings_icon.png" target-dir="res/drawable"/>
+    <source-file src="src/android/res/drawable/start_record_btn.png" target-dir="res/drawable"/>
+    <source-file src="src/android/res/drawable/stop_recording_btn.png" target-dir="res/drawable"/>
+    <source-file src="src/android/res/drawable/dot_shape.xml" target-dir="res/drawable"/>
+  </platform>
+</plugin>

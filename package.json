@@ -1,0 +1,17 @@
+{
+  "name": "cordova-android-custom-camera",
+  "version": "0.0.3",
+  "description": "custom camera implementation for Android",
+  "cordova": {
+    "id": "cordova-android-custom-camera",
+    "platforms": [
+      "android"
+    ]
+  },
+  "keywords": [
+    "ecosystem:cordova",
+    "cordova-android"
+  ],
+  "author": "",
+  "license": "ISC"
+}
