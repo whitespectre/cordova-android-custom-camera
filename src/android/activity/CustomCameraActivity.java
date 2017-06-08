@@ -33,13 +33,10 @@ import android.widget.ImageButton;
 import android.view.OrientationEventListener;
 import android.content.Context;
 
-
 public class CustomCameraActivity extends Activity implements SurfaceHolder.Callback {
   private FakeR fakeR;
   private MediaRecorder mediaRecorder;
-  private boolean initSuccessfull;
   private boolean recording = false;
-  private int currentOrientation;
   private Uri currentFileName;
   private ImageButton switchViewButton;
   private ImageButton switchFlashButton;
@@ -47,7 +44,6 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   private ImageButton startRecordingButton;
   private ImageButton stopRecordingButton;
   private Button cancelRecordingButton;
-  private int currentView = 0;
   private TextView timerText;
   private CountDownTimer currentCounter;
   private View recordingDot;
@@ -56,12 +52,14 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   private OrientationListener orientationListener;
   private int rotation;
   
-
   Camera camera;
   SurfaceView surfaceView;
   SurfaceHolder surfaceHolder;  
   private final String TAG = "CustomCameraActivity";
 
+  public boolean hasFrontCamera() {
+    return camera.getNumberOfCameras() > 1;
+  }
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
@@ -89,6 +87,9 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     //init buttons
     timerText = (TextView) findViewById(fakeR.getId("id", "recordingTimer"));
     switchViewButton = (ImageButton) findViewById(fakeR.getId("id", "switchViewButton"));
+    if (!hasFrontCamera()) {
+      switchViewButton.setVisibility(View.GONE);
+    }
     switchViewButton.setOnClickListener( new OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -130,19 +131,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     startRecordingButton.setOnClickListener( new OnClickListener() {
       @Override
       public void onClick(View v) {            
-        setFlashButtons(false, false);
-        try {
-            initRecorder(surfaceHolder.getSurface());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        mediaRecorder.start();
-        startTimer();
-        recording = true;
-        // show buttons
-        cancelRecordingButton.setVisibility(View.GONE);
-        startRecordingButton.setVisibility(View.GONE);
-        stopRecordingButton.setVisibility(View.VISIBLE);         
+        startRecording();
       }
     });
 
@@ -176,12 +165,31 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     finish();
   }
 
+  public void startRecording() {
+    setFlashButtons(false, false);
+    try {
+        initRecorder(surfaceHolder.getSurface());
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+    mediaRecorder.start();
+    startTimer();
+    recording = true;
+
+    cancelRecordingButton.setVisibility(View.GONE);
+    startRecordingButton.setVisibility(View.GONE);
+    stopRecordingButton.setVisibility(View.VISIBLE);
+    switchViewButton.setVisibility(View.GONE);
+  }
+
   public void stopRecording(boolean finished) {
     if(recording == true) {
       timerText.setText("3:00");
       recordingDot.setVisibility(View.GONE);
       setFlashButtons(true, false);
-      switchViewButton.setVisibility(View.VISIBLE);
+      if(hasFrontCamera()) {
+        switchViewButton.setVisibility(View.VISIBLE);
+      }
       mediaRecorder.stop();
       currentCounter.cancel();
       refreshLibrary();
@@ -298,24 +306,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
 
   private void setCameraOrientation() {
     int rotation = getWindowManager().getDefaultDisplay().getRotation();
-    camera.stopPreview();
-    switch(rotation) {
-    case Surface.ROTATION_180:
-        camera.setDisplayOrientation(90);
-        break;
-    case Surface.ROTATION_270:
-        // right rotate
-        camera.setDisplayOrientation(180);
-        break;
-    case  Surface.ROTATION_0:
-        // left portrait
-        camera.setDisplayOrientation(90);
-        break;
-    case Surface.ROTATION_90:
-        // left rotate
-        camera.setDisplayOrientation(0);
-        break;
-    }
+    camera.setDisplayOrientation(90);
     camera.startPreview();
   }
 
@@ -405,7 +396,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
 
     // No limit. Don't forget to check the space on disk.
     mediaRecorder.setMaxDuration(180000);
-    mediaRecorder.setVideoFrameRate(30);
+    mediaRecorder.setVideoFrameRate(60);
     mediaRecorder.setVideoSize(640, 480);
     mediaRecorder.setVideoEncodingBitRate(3000000);
     mediaRecorder.setAudioEncodingBitRate(8000);
@@ -419,8 +410,6 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     } catch (IllegalStateException e) {
         e.printStackTrace();
     }
-
-    initSuccessfull = true;
   }
 
   private int getRecordingAngle() {
