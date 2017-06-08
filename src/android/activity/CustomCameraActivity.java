@@ -61,6 +61,11 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     return camera.getNumberOfCameras() > 1;
   }
 
+  public void showToast(String key) {
+    String tooltip = getIntent().getStringExtra(key);
+    Toast.makeText(this, tooltip, Toast.LENGTH_LONG).show();
+  }
+
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
@@ -77,10 +82,9 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
 
     //get params
     String paramCancelText = getIntent().getStringExtra("CANCEL_TEXT");
-    String tooltip = getIntent().getStringExtra("TOOLTIP");
-
-    Toast.makeText(this, tooltip, Toast.LENGTH_LONG).show();
-
+    
+    showToast("TOOLTIP");
+    
     //orientation listener
     orientationListener = new OrientationListener(this);
 
@@ -93,9 +97,9 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     switchViewButton.setOnClickListener( new OnClickListener() {
         @Override
         public void onClick(View v) {
-            if (!recording) {
-              switchView(); 
-            }
+          if (!recording) {
+            switchView(); 
+          }
         }
     });
 
@@ -103,9 +107,9 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     flashOffButton.setOnClickListener( new OnClickListener() {
         @Override
         public void onClick(View v) {
-            if (!recording) {
-              switchFlash(); 
-            }
+          if (!recording) {
+            switchFlash(); 
+          }
         }
     });
 
@@ -113,9 +117,9 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     switchFlashButton.setOnClickListener( new OnClickListener() {
         @Override
         public void onClick(View v) {
-            if (!recording) {
-              switchFlash(); 
-            }
+          if (!recording) {
+            switchFlash(); 
+          }
         }
     });
 
@@ -166,11 +170,16 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   }
 
   public void startRecording() {
-    setFlashButtons(false, false);
     try {
-        initRecorder(surfaceHolder.getSurface());
+      if (!hasEnoughtSpace()) {
+        showToast("ERROR_STORAGE");
+        return;
+      }
+      initRecorder(surfaceHolder.getSurface());
+      setFlashButtons(false, false);
     } catch (IOException e) {
-        e.printStackTrace();
+      showToast("ERROR_GENERAL");
+      return;
     }
     mediaRecorder.start();
     startTimer();
@@ -183,11 +192,11 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   }
 
   public void stopRecording(boolean finished) {
-    if(recording == true) {
+    if (recording == true) {
       timerText.setText("3:00");
       recordingDot.setVisibility(View.GONE);
       setFlashButtons(true, false);
-      if(hasFrontCamera()) {
+      if (hasFrontCamera()) {
         switchViewButton.setVisibility(View.VISIBLE);
       }
       mediaRecorder.stop();
@@ -200,7 +209,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
       startRecordingButton.setVisibility(View.VISIBLE);
       cancelRecordingButton.setVisibility(View.VISIBLE);
 
-      if(finished) {
+      if (finished) {
         Intent data = new Intent();
         data.putExtra("videoUrl", currentFileName.toString());
         setResult(RESULT_OK, data);
@@ -228,7 +237,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   }
 
   private void setFlashButtons(boolean flashOn, boolean flashOff) {
-    if(flashOn) {
+    if (flashOn) {
       switchFlashButton.setVisibility(View.VISIBLE);      
     } else {
       switchFlashButton.setVisibility(View.GONE);
@@ -246,7 +255,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   }
 
   public void surfaceDestroyed(SurfaceHolder holder) {
-    if(mediaRecorder != null) {
+    if (mediaRecorder != null) {
       mediaRecorder.stop();
       File file = new File(currentFileName.toString());
       file.delete();
@@ -257,7 +266,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
 
   private void switchView() {
     stopCamera();
-    if(this.isBackCamera) {
+    if (this.isBackCamera) {
       this.startCamera(1, false);
       setFlashButtons(false, false);
     } else {
@@ -272,7 +281,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     stopCamera();
     this.startCamera(0, !isFlashOn);
     startPreview(surfaceView.getHolder());
-    if(isFlashOn) {
+    if (isFlashOn) {
       setFlashButtons(false, true);
     } else {
       setFlashButtons(true, false);
@@ -281,20 +290,19 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
 
   public void startTimer() {
     currentCounter = new CountDownTimer(180000, 500) {
-       public void onTick(long millisUntilFinished) {
+      public void onTick(long millisUntilFinished) {
+        if (recordingDot.getVisibility() == View.VISIBLE) {
+          recordingDot.setVisibility(View.INVISIBLE);
+        } else {
+          recordingDot.setVisibility(View.VISIBLE);
+        }
 
-          if (recordingDot.getVisibility() == View.VISIBLE) {
-            recordingDot.setVisibility(View.INVISIBLE);
-          } else {
-            recordingDot.setVisibility(View.VISIBLE);
-          }
-
-          String timeFormat = String.format("%d:%02d", 
-            TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished) -  
-            TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(millisUntilFinished)),
-            TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished) - 
-            TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished))); 
-           timerText.setText(timeFormat);
+        String timeFormat = String.format("%d:%02d", 
+          TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished) -  
+          TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(millisUntilFinished)),
+          TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished) - 
+          TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished))); 
+         timerText.setText(timeFormat);
        }
 
        public void onFinish() {
@@ -333,12 +341,12 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
 
   public void startPreview(SurfaceHolder holder) {
     try {
-          camera.stopPreview();
+      camera.stopPreview();
     } catch (Exception e){}
 
     try {
-        camera.setPreviewDisplay(holder);
-        camera.startPreview();
+      camera.setPreviewDisplay(holder);
+      camera.startPreview();
     } catch (IOException e) {}
   }
 
@@ -359,13 +367,31 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     File file = null;
 
     if (!dir.exists() && !dir.mkdirs()) {
-        file = null;
+      file = null;
     } else {
-        file = new File(dir.getAbsolutePath(), new SimpleDateFormat(
-          "'IMG_'yyyyMMddHHmmss'.mp4'").format(new Date()));
-        currentFileName = Uri.fromFile(file);
+      file = new File(dir.getAbsolutePath(), new SimpleDateFormat(
+        "'IMG_'yyyyMMddHHmmss'.mp4'").format(new Date()));
+      currentFileName = Uri.fromFile(file);
     }
     return file;
+  }
+
+  private boolean hasEnoughtSpace() throws IOException {
+    String libraryFolder = getIntent().getStringExtra("LIBRARY_FOLDER");
+    File dir = new File(Environment.getExternalStorageDirectory(), libraryFolder);
+    File file = null;
+
+    if (!dir.exists() && !dir.mkdirs()) {
+      file = null;
+    } else {
+      file = new File(dir.getAbsolutePath(), "tempFile");
+      if(!file.exists()) {
+        file.createNewFile();
+      }
+      return file.getFreeSpace() > 62914560;
+    }
+
+    return false;
   }
 
   @Override
@@ -406,31 +432,30 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     mediaRecorder.setOrientationHint(getRecordingAngle());
 
     try {
-        mediaRecorder.prepare();
+      mediaRecorder.prepare();
     } catch (IllegalStateException e) {
-        e.printStackTrace();
+      e.printStackTrace();
     }
   }
 
   private int getRecordingAngle() {
     int angle = 0;
-    //int rotation = getWindowManager().getDefaultDisplay().getRotation();
     switch(rotation) {
     case Surface.ROTATION_180:
-        angle = 90;
-        break;
+      angle = 90;
+      break;
     case Surface.ROTATION_270:
-        angle = 180;
-        break;
+      angle = 180;
+      break;
     case Surface.ROTATION_0:
-        angle = 90;
-        if (!this.isBackCamera) {
-          angle = 270;
-        }
-        break;
+      angle = 90;
+      if (!this.isBackCamera) {
+        angle = 270;
+      }
+      break;
     case Surface.ROTATION_90:
-        angle = 0;
-        break;
+      angle = 0;
+      break;
     }
     return angle;
   }
@@ -440,13 +465,13 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
 
     @Override public void onOrientationChanged(int orientation) {
       if( (orientation < 35 || orientation > 325) && rotation != Surface.ROTATION_0){
-          rotation = Surface.ROTATION_0;
+        rotation = Surface.ROTATION_0;
       } else if( orientation > 145 && orientation < 215 && rotation != Surface.ROTATION_180){
-          rotation = Surface.ROTATION_180;
+        rotation = Surface.ROTATION_180;
       } else if(orientation > 55 && orientation < 125 && rotation != Surface.ROTATION_270){
-          rotation = Surface.ROTATION_270;
+        rotation = Surface.ROTATION_270;
       } else if(orientation > 235 && orientation < 305 && rotation != Surface.ROTATION_90){
-          rotation = Surface.ROTATION_90;
+        rotation = Surface.ROTATION_90;
       }
     }
   }

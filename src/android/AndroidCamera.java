@@ -65,6 +65,8 @@ public class AndroidCamera extends CordovaPlugin {
       intent.putExtra("LIBRARY_FOLDER", args.getString(0));
       intent.putExtra("CANCEL_TEXT", args.getString(1));
       intent.putExtra("TOOLTIP", args.getString(2));
+      intent.putExtra("ERROR_STORAGE", args.getString(3));
+      intent.putExtra("ERROR_GENERAL", args.getString(4));
 
       if (this.cordova != null) {
         this.cordova.startActivityForResult((CordovaPlugin) this, intent, 0);

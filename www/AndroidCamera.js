@@ -8,6 +8,8 @@ CustomCamera.prototype.recordVideo = function(success, fail, options) {
   var libraryFolder = getValue(options.libraryFolder, "My Challenge Tracker");
   var cancelText = getValue(options.cancelText, "Cancel");
   var tooltip = getValue(options.tooltip, "Max time limit 3 minutes");
+  var errorStorage = getValue(options.errorStorage, "It seems that you don't have enought storage to record videos, please free up some memory");
+  var errorGeneral = getValue(options.errorGeneral, "Oops, something went wrong.  Please try again.");
 
   return cordova.exec(
     success, 
@@ -16,7 +18,9 @@ CustomCamera.prototype.recordVideo = function(success, fail, options) {
     "recordVideo", [
       libraryFolder,
       cancelText,
-      tooltip
+      tooltip,
+      errorStorage,
+      errorGeneral
     ]);
 };
 
