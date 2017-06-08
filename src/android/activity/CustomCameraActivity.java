@@ -52,7 +52,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   private CountDownTimer currentCounter;
   private View recordingDot;
   private boolean isFlashOn = false;
-  private boolean isBackCamera = true;
+  private boolean isBackCamera = false;
   private OrientationListener orientationListener;
   private int rotation;
   
@@ -82,22 +82,13 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     surfaceHolder.addCallback(this);
     surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
-    this.startCamera(0, false);
-
-    //get params
-    String paramCancelText = getIntent().getStringExtra("CANCEL_TEXT");
-    
-    showToast("TOOLTIP");
-    
     //orientation listener
     orientationListener = new OrientationListener(this);
 
     //init buttons
     timerText = (TextView) findViewById(fakeR.getId("id", "recordingTimer"));
     switchViewButton = (ImageButton) findViewById(fakeR.getId("id", "switchViewButton"));
-    if (!hasFrontCamera()) {
-      switchViewButton.setVisibility(View.GONE);
-    }
+
     switchViewButton.setOnClickListener( new OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -143,6 +134,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
       }
     });
 
+    String paramCancelText = getIntent().getStringExtra("CANCEL_TEXT");
     cancelRecordingButton = (Button) findViewById(fakeR.getId("id", "cancelRecording"));
     cancelRecordingButton.setText(paramCancelText);
     cancelRecordingButton.setOnClickListener( new OnClickListener() {
@@ -151,6 +143,18 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
         cancelRecordingProcess();
       }
     });
+
+    // init camera
+    showToast("TOOLTIP");
+    if (!hasFrontCamera()) {
+      this.startCamera(0, false);
+      isBackCamera = true;
+      switchViewButton.setVisibility(View.GONE);
+    } else {
+      this.startCamera(1, false);
+      isBackCamera = false;
+      setFlashButtons(false, false);
+    }
   }
 
   @Override
