@@ -32,6 +32,10 @@ import java.util.concurrent.TimeUnit;
 import android.widget.ImageButton;
 import android.view.OrientationEventListener;
 import android.content.Context;
+import android.view.Display;
+import android.graphics.Point;
+import java.lang.Math;
+import java.util.List;
 
 public class CustomCameraActivity extends Activity implements SurfaceHolder.Callback {
   private FakeR fakeR;
@@ -327,6 +331,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
       return;
     }
     Camera.Parameters param = camera.getParameters();
+    param.setRecordingHint(true);
     if (isFlashOn) {
       param.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);  
     }
@@ -334,9 +339,9 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
         Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO)) {
       param.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
     }
+    setPreviewSize();
     setCameraOrientation();
     camera.setParameters(param);
-      
   }
 
   public void startPreview(SurfaceHolder holder) {
@@ -348,6 +353,17 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
       camera.setPreviewDisplay(holder);
       camera.startPreview();
     } catch (IOException e) {}
+  }
+
+  protected void setPreviewSize() {
+    Camera.Parameters param =  camera.getParameters();
+    Camera.Size previewSize = param.getPictureSize();
+    Display display = getWindowManager().getDefaultDisplay();
+    Point size = new Point();
+    display.getSize(size);
+
+    double height = ((double)previewSize.width/previewSize.height) * size.x;
+    surfaceView.getHolder().setFixedSize(size.x, (int)height);
   }
 
   @Override
@@ -405,7 +421,6 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     sendBroadcast(mediaScanIntent);
   }
 
-
   private void initRecorder(Surface surface) throws IOException {
     camera.unlock();
 
@@ -423,7 +438,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     // No limit. Don't forget to check the space on disk.
     mediaRecorder.setMaxDuration(180000);
     mediaRecorder.setVideoFrameRate(60);
-    mediaRecorder.setVideoSize(640, 480);
+    mediaRecorder.setVideoSize(720, 480);
     mediaRecorder.setVideoEncodingBitRate(3000000);
     mediaRecorder.setAudioEncodingBitRate(8000);
 
