@@ -36,6 +36,7 @@ import android.view.Display;
 import android.graphics.Point;
 import java.lang.Math;
 import java.util.List;
+import android.media.CamcorderProfile;
 
 
 public class CustomCameraActivity extends Activity implements SurfaceHolder.Callback {
@@ -486,13 +487,12 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
 
     // No limit. Don't forget to check the space on disk.
     mediaRecorder.setMaxDuration(180000);
-    mediaRecorder.setVideoFrameRate(60);
+    mediaRecorder.setVideoFrameRate(30);
     mediaRecorder.setVideoSize(selectedSize.width, selectedSize.height);
     mediaRecorder.setVideoEncodingBitRate(1500000);
     mediaRecorder.setAudioEncodingBitRate(8000);
-
-    mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
-    mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+    mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+    mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
     mediaRecorder.setOrientationHint(getRecordingAngle());
 
     try {
