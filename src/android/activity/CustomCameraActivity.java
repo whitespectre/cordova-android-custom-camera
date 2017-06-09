@@ -62,6 +62,12 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   SurfaceView surfaceView;
   SurfaceHolder surfaceHolder;  
   private final String TAG = "CustomCameraActivity";
+  // recording params
+  private final int REC_MAX_DURATION = 180000;
+  private final int REC_FPS = 30;
+  private final int REC_VIDEO_BITRATE = 1500000;
+  private final int REC_AUDIO_BITRATE = 8000;
+
   
   public boolean hasFrontCamera() {
     return camera.getNumberOfCameras() > 1;
@@ -484,13 +490,11 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     mediaRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
     mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4); 
     mediaRecorder.setOutputFile(this.initFile().getAbsolutePath());
-
-    // No limit. Don't forget to check the space on disk.
-    mediaRecorder.setMaxDuration(180000);
-    mediaRecorder.setVideoFrameRate(30);
+    mediaRecorder.setMaxDuration(REC_MAX_DURATION);
+    mediaRecorder.setVideoFrameRate(REC_FPS);
     mediaRecorder.setVideoSize(selectedSize.width, selectedSize.height);
-    mediaRecorder.setVideoEncodingBitRate(1500000);
-    mediaRecorder.setAudioEncodingBitRate(8000);
+    mediaRecorder.setVideoEncodingBitRate(REC_VIDEO_BITRATE);
+    mediaRecorder.setAudioEncodingBitRate(REC_AUDIO_BITRATE);
     mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
     mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
     mediaRecorder.setOrientationHint(getRecordingAngle());
