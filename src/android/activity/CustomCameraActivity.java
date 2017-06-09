@@ -212,7 +212,11 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
       if (hasFrontCamera()) {
         switchViewButton.setVisibility(View.VISIBLE);
       }
-      mediaRecorder.stop();
+      try{
+        mediaRecorder.stop();
+      }catch(RuntimeException stopException){
+        // media didn't record anything (only can happen on onResume)
+      }
       currentCounter.cancel();
       refreshLibrary();
       mediaRecorder = null;
@@ -484,7 +488,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     mediaRecorder.setMaxDuration(180000);
     mediaRecorder.setVideoFrameRate(60);
     mediaRecorder.setVideoSize(selectedSize.width, selectedSize.height);
-    mediaRecorder.setVideoEncodingBitRate(3000000);
+    mediaRecorder.setVideoEncodingBitRate(1500000);
     mediaRecorder.setAudioEncodingBitRate(8000);
 
     mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
