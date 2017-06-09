@@ -37,6 +37,7 @@ import android.graphics.Point;
 import java.lang.Math;
 import java.util.List;
 
+
 public class CustomCameraActivity extends Activity implements SurfaceHolder.Callback {
   private FakeR fakeR;
   private MediaRecorder mediaRecorder;
@@ -55,12 +56,12 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   private boolean isBackCamera = false;
   private OrientationListener orientationListener;
   private int rotation;
-  
+  private Camera.Size selectedSize = null;
   Camera camera;
   SurfaceView surfaceView;
   SurfaceHolder surfaceHolder;  
   private final String TAG = "CustomCameraActivity";
-
+  
   public boolean hasFrontCamera() {
     return camera.getNumberOfCameras() > 1;
   }
@@ -122,7 +123,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     stopRecordingButton.setOnClickListener( new OnClickListener() {
       @Override
       public void onClick(View v) {
-        stopRecording(true);
+        stopRecording(true);  
       }
     });
 
@@ -156,6 +157,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
       setFlashButtons(false, false);
     }
   }
+
 
   @Override
   public void onStart() {
@@ -195,12 +197,15 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
 
     cancelRecordingButton.setVisibility(View.GONE);
     startRecordingButton.setVisibility(View.GONE);
+    stopRecordingButton.setEnabled(false);
     stopRecordingButton.setVisibility(View.VISIBLE);
     switchViewButton.setVisibility(View.GONE);
   }
 
   public void stopRecording(boolean finished) {
     if (recording == true) {
+      recording = false;
+      stopRecordingButton.setVisibility(View.GONE);
       timerText.setText("3:00");
       recordingDot.setVisibility(View.GONE);
       setFlashButtons(true, false);
@@ -210,13 +215,13 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
       mediaRecorder.stop();
       currentCounter.cancel();
       refreshLibrary();
-      recording = false;
       mediaRecorder = null;
-      // show buttons
-      stopRecordingButton.setVisibility(View.GONE);
-      startRecordingButton.setVisibility(View.VISIBLE);
-      cancelRecordingButton.setVisibility(View.VISIBLE);
 
+      if (!finished) {
+        startRecordingButton.setVisibility(View.VISIBLE);
+        cancelRecordingButton.setVisibility(View.VISIBLE);  
+      }
+      
       if (finished) {
         Intent data = new Intent();
         data.putExtra("videoUrl", currentFileName.toString());
@@ -234,13 +239,20 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     super.onPause();
     stopRecording(false);
     camera.stopPreview();
-    setFlashButtons(true, false);
+    if(isBackCamera) {
+      setFlashButtons(true, false);  
+    }
   }
 
   @Override
   public void onResume() {
     super.onResume();
-    this.startCamera(0, false);
+    if (isBackCamera) {
+      this.startCamera(0, false);  
+    } else {
+      this.startCamera(1, false);
+    }
+    
     startPreview(surfaceView.getHolder());
   }
 
@@ -299,6 +311,10 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   public void startTimer() {
     currentCounter = new CountDownTimer(180000, 500) {
       public void onTick(long millisUntilFinished) {
+        if (millisUntilFinished > 170000 && millisUntilFinished < 177000 ) {
+          stopRecordingButton.setEnabled(true);
+        }
+
         if (recordingDot.getVisibility() == View.VISIBLE) {
           recordingDot.setVisibility(View.INVISIBLE);
         } else {
@@ -331,6 +347,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     this.isFlashOn = isFlashOn;
     try{
         camera = Camera.open(cameraView);
+        setOptimalResolution();
     }catch(RuntimeException e){
       return;
     }
@@ -343,9 +360,11 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
         Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO)) {
       param.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
     }
-    setPreviewSize();
+    param.setPreviewSize(selectedSize.width, selectedSize.height);
     setCameraOrientation();
     camera.setParameters(param);
+
+    setPreviewSize();
   }
 
   public void startPreview(SurfaceHolder holder) {
@@ -360,13 +379,11 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   }
 
   protected void setPreviewSize() {
-    Camera.Parameters param =  camera.getParameters();
-    Camera.Size previewSize = param.getPictureSize();
     Display display = getWindowManager().getDefaultDisplay();
     Point size = new Point();
     display.getSize(size);
 
-    double height = ((double)previewSize.width/previewSize.height) * size.x;
+    double height = ((double)selectedSize.width/ selectedSize.height) * size.x;
     surfaceView.getHolder().setFixedSize(size.x, (int)height);
   }
 
@@ -420,6 +437,30 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     setCameraOrientation();
   }
 
+  private void setOptimalResolution() {
+    if(selectedSize != null) {
+      return;
+    }
+
+    Camera.Parameters param = camera.getParameters();
+    List<Camera.Size> listSizes = param.getSupportedVideoSizes();
+
+    for (Camera.Size size : listSizes) {
+      if (size.height <= 480) {
+        if(selectedSize == null) {
+          selectedSize = size;
+        } else if(size.height >= selectedSize.height && size.width < selectedSize.width) {
+          selectedSize = size;
+        }
+        //preferred size width
+        if(size.width == 640 && size.height == 480) {
+          selectedSize = size;
+          return;
+        }
+      }
+    }
+  }
+
   private void refreshLibrary() {
     Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE,currentFileName);
     sendBroadcast(mediaScanIntent);
@@ -442,7 +483,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     // No limit. Don't forget to check the space on disk.
     mediaRecorder.setMaxDuration(180000);
     mediaRecorder.setVideoFrameRate(60);
-    mediaRecorder.setVideoSize(720, 480);
+    mediaRecorder.setVideoSize(selectedSize.width, selectedSize.height);
     mediaRecorder.setVideoEncodingBitRate(3000000);
     mediaRecorder.setAudioEncodingBitRate(8000);
 
