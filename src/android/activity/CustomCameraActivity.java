@@ -82,6 +82,10 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+    init();
+  }
+
+  public void init() {
     fakeR = new FakeR(this);
     setContentView(fakeR.getId("layout", "custom_camera"));
 
@@ -258,6 +262,14 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   }
 
   @Override
+  public void onNewIntent (Intent intent) {
+    super.onNewIntent(intent);
+    // getIntent() should always return the most recent
+    setIntent(intent);
+    init();
+  }
+
+  @Override
   public void onResume() {
     super.onResume();
     if (isBackCamera) {
@@ -384,6 +396,10 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   }
 
   public void startPreview(SurfaceHolder holder) {
+    if(camera == null) {
+      return;
+    }
+    
     try {
       camera.stopPreview();
     } catch (Exception e){}
