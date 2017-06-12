@@ -13,7 +13,6 @@
           android:configChanges="orientation|screenSize" 
           android:screenOrientation="portrait"
           android:label="@string/multi_app_name"
-          android:keepScreenOn="true"
           android:name="com.cga.CustomCameraActivity"
           android:noHistory="true"
           android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen">
