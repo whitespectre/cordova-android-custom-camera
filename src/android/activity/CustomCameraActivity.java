@@ -37,6 +37,7 @@ import android.graphics.Point;
 import java.lang.Math;
 import java.util.List;
 import android.media.CamcorderProfile;
+import android.graphics.Color;
 
 
 public class CustomCameraActivity extends Activity implements SurfaceHolder.Callback {
@@ -63,7 +64,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   SurfaceHolder surfaceHolder;  
   private final String TAG = "CustomCameraActivity";
   // recording params
-  private final int REC_MAX_DURATION = 180000;
+  private final int REC_MAX_DURATION = 181000;
   private final int REC_FPS = 30;
   private final int REC_VIDEO_BITRATE = 1500000;
   private final int REC_AUDIO_BITRATE = 8000;
@@ -214,6 +215,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
       recording = false;
       stopRecordingButton.setVisibility(View.GONE);
       timerText.setText("3:00");
+      timerText.setTextColor(Color.parseColor("#FFFFFF"));
       recordingDot.setVisibility(View.GONE);
       setFlashButtons(true, false);
       if (hasFrontCamera()) {
@@ -337,12 +339,15 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
           TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(millisUntilFinished)),
           TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished) - 
           TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished))); 
-         timerText.setText(timeFormat);
-       }
+        timerText.setText(timeFormat);
+        if(millisUntilFinished <= 10000) {
+          timerText.setTextColor(Color.parseColor("#FF0000"));
+        }
+     }
 
-       public void onFinish() {
-          stopRecordingButton.performClick();
-       }
+      public void onFinish() {
+        stopRecordingButton.performClick();
+      }
     };
     currentCounter.start();
   }
