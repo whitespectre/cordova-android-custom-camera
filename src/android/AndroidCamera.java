@@ -68,8 +68,7 @@ public class AndroidCamera extends CordovaPlugin {
       intent.putExtra("ERROR_STORAGE", args.getString(3));
       intent.putExtra("ERROR_GENERAL", args.getString(4));
       intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-      intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
+      
       if (this.cordova != null) {
         this.cordova.startActivityForResult((CordovaPlugin) this, intent, 0);
       }
