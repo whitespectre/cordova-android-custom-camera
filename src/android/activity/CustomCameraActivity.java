@@ -377,7 +377,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     }catch(RuntimeException e){
       showToast("ERROR_GENERAL");
       Intent data = new Intent();
-      setResult(RESULT_CANCELED, data);
+      setResult(5, data);
       finish();
       return;
     }

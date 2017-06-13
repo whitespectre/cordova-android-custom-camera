@@ -77,8 +77,10 @@ public class AndroidCamera extends CordovaPlugin {
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
       if (resultCode == Activity.RESULT_OK && data != null) {
         this.callbackContext.success(data.getStringExtra("videoUrl"));
+      } else if(resultCode == 5){
+        this.callbackContext.error("CAMERA_BUSY");
       } else {
-        this.callbackContext.error("No video recorded");
+        this.callbackContext.error("USER_CANCEL");
       }
     }
 }
