@@ -185,7 +185,8 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
 
   public void cancelRecordingProcess() {
     stopRecording(false);
-    camera.stopPreview();
+    stopCamera();
+    camera = null;
     Intent data = new Intent();
     setResult(RESULT_CANCELED, data);
     finish();
@@ -240,6 +241,8 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
       }
       
       if (finished) {
+        stopCamera();
+        camera = null;
         Intent data = new Intent();
         data.putExtra("videoUrl", currentFileName.toString());
         setResult(RESULT_OK, data);
@@ -255,16 +258,17 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   public void onPause() {
     super.onPause();
     stopRecording(false);
-    camera.stopPreview();
-    if(isBackCamera) {
-      setFlashButtons(true, false);  
+    if(camera != null ) {
+      camera.stopPreview();
+      if(isBackCamera) {
+        setFlashButtons(true, false);  
+      }
     }
   }
 
   @Override
   public void onNewIntent (Intent intent) {
     super.onNewIntent(intent);
-    // getIntent() should always return the most recent
     setIntent(intent);
     init();
   }
@@ -305,8 +309,10 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
       File file = new File(currentFileName.toString());
       file.delete();
     }
-    camera.stopPreview();
-    camera.release();
+    if(camera != null) {
+      camera.stopPreview();
+      camera.release();  
+    }
   }
 
   private void switchView() {
@@ -377,6 +383,9 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
         camera = Camera.open(cameraView);
         setOptimalResolution();
     }catch(RuntimeException e){
+      Intent data = new Intent();
+      setResult(RESULT_CANCELED, data);
+      finish();
       return;
     }
     Camera.Parameters param = camera.getParameters();
