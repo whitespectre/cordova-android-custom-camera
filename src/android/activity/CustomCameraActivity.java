@@ -160,11 +160,9 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     // init camera
     showToast("TOOLTIP");
     if (!hasFrontCamera()) {
-      this.startCamera(0, false);
       isBackCamera = true;
       switchViewButton.setVisibility(View.GONE);
     } else {
-      this.startCamera(1, false);
       isBackCamera = false;
       setFlashButtons(false, false);
     }
@@ -265,6 +263,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
       }
     }
   }
+
 
   @Override
   public void onResume() {
