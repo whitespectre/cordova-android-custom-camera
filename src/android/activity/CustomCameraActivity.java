@@ -267,13 +267,6 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   }
 
   @Override
-  public void onNewIntent (Intent intent) {
-    super.onNewIntent(intent);
-    setIntent(intent);
-    init();
-  }
-
-  @Override
   public void onResume() {
     super.onResume();
     if (isBackCamera) {
