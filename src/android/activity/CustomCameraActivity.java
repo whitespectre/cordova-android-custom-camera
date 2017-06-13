@@ -375,6 +375,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
         camera = Camera.open(cameraView);
         setOptimalResolution();
     }catch(RuntimeException e){
+      showToast("ERROR_GENERAL");
       Intent data = new Intent();
       setResult(RESULT_CANCELED, data);
       finish();
