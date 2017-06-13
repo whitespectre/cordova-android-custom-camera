@@ -332,7 +332,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   }
 
   public void startTimer() {
-    currentCounter = new CountDownTimer(180000, 500) {
+    currentCounter = new CountDownTimer(REC_MAX_DURATION, 500) {
       public void onTick(long millisUntilFinished) {
         if (millisUntilFinished > 170000 && millisUntilFinished < 177000 ) {
           stopRecordingButton.setEnabled(true);
