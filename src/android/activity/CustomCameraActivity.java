@@ -184,7 +184,6 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   public void cancelRecordingProcess() {
     stopRecording(false);
     stopCamera();
-    camera = null;
     Intent data = new Intent();
     setResult(RESULT_CANCELED, data);
     finish();
@@ -240,7 +239,6 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
       
       if (finished) {
         stopCamera();
-        camera = null;
         Intent data = new Intent();
         data.putExtra("videoUrl", currentFileName.toString());
         setResult(RESULT_OK, data);
@@ -429,7 +427,9 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   private void stopCamera()
   {
     camera.stopPreview();
+    camera.setPreviewCallback(null);
     camera.release();
+    camera = null;
   }
 
   private File initFile() {
