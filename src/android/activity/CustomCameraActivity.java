@@ -66,8 +66,8 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   // recording params
   private final int REC_MAX_DURATION = 181000;
   private final int REC_FPS = 30;
-  private final int REC_VIDEO_BITRATE = 1500000;
-  private final int REC_AUDIO_BITRATE = 8000;
+  private final int REC_VIDEO_BITRATE = 1700000;
+  private final int REC_AUDIO_BITRATE = 98000;
 
   
   public boolean hasFrontCamera() {
