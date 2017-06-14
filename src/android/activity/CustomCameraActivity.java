@@ -388,11 +388,11 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
         Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO)) {
       param.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
     }
-    param.setPreviewSize(selectedSize.width, selectedSize.height);
+    
     setCameraOrientation();
     camera.setParameters(param);
 
-    setPreviewSize();
+    setPreviewSize(param.getPreviewSize());
   }
 
   public void startPreview(SurfaceHolder holder) {
@@ -410,12 +410,12 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     } catch (IOException e) {}
   }
 
-  protected void setPreviewSize() {
+  protected void setPreviewSize(Camera.Size camSize) {
     Display display = getWindowManager().getDefaultDisplay();
     Point size = new Point();
     display.getSize(size);
 
-    double height = ((double)selectedSize.width/ selectedSize.height) * size.x;
+    double height = ((double)camSize.width/ camSize.height) * size.x;
     surfaceView.getHolder().setFixedSize(size.x, (int)height);
   }
 
