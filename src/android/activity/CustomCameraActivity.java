@@ -183,7 +183,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
 
   public void cancelRecordingProcess() {
     stopRecording(false);
-    stopCamera(true);
+    stopCamera();
     Intent data = new Intent();
     setResult(RESULT_CANCELED, data);
     finish();
@@ -238,7 +238,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
       }
       
       if (finished) {
-        stopCamera(true);
+        stopCamera();
         Intent data = new Intent();
         data.putExtra("videoUrl", currentFileName.toString());
         setResult(RESULT_OK, data);
@@ -255,7 +255,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     super.onPause();
     stopRecording(false);
     if(camera != null ) {
-      stopCamera(false);
+      camera.stopPreview();
       if(isBackCamera) {
         setFlashButtons(true, false);  
       }
@@ -306,7 +306,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   }
 
   private void switchView() {
-    stopCamera(false);
+    stopCamera();
     if (this.isBackCamera) {
       this.startCamera(1, false);
       setFlashButtons(false, false);
@@ -319,7 +319,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   }
 
   public void switchFlash() {
-    stopCamera(false);
+    stopCamera();
     this.startCamera(0, !isFlashOn);
     startPreview(surfaceView.getHolder());
     if (isFlashOn) {
@@ -424,13 +424,10 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     startPreview(holder);   
   }
 
-  private void stopCamera(boolean finished)
+  private void stopCamera()
   {
     camera.stopPreview();
     camera.setPreviewCallback(null);
-    if (finished) {
-      surfaceHolder.removeCallback(this);
-    }
     camera.release();
     camera = null;
   }
