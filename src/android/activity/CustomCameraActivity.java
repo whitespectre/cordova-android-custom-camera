@@ -68,6 +68,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   private final int REC_FPS = 30;
   private final int REC_VIDEO_BITRATE = 1700000;
   private final int REC_AUDIO_BITRATE = 98000;
+  private final int REC_AUDIO_SAMPLE_RATE = 44100; 
 
   
   public boolean hasFrontCamera() {
@@ -518,6 +519,7 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     mediaRecorder.setVideoSize(selectedSize.width, selectedSize.height);
     mediaRecorder.setVideoEncodingBitRate(REC_VIDEO_BITRATE);
     mediaRecorder.setAudioEncodingBitRate(REC_AUDIO_BITRATE);
+    mediaRecorder.setAudioSamplingRate(REC_AUDIO_SAMPLE_RATE); 
     mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
     mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
     mediaRecorder.setOrientationHint(getRecordingAngle());
