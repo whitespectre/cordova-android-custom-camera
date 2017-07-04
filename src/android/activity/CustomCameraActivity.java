@@ -38,6 +38,7 @@ import java.lang.Math;
 import java.util.List;
 import android.media.CamcorderProfile;
 import android.graphics.Color;
+import android.os.Build;
 
 
 public class CustomCameraActivity extends Activity implements SurfaceHolder.Callback {
@@ -78,6 +79,19 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   public void showToast(String key) {
     String tooltip = getIntent().getStringExtra(key);
     Toast.makeText(this, tooltip, Toast.LENGTH_LONG).show();
+  }
+
+  public boolean isSensorRotated(boolean isBackCamera) {
+    if (isBackCamera) {
+      return false;
+    }
+
+    String deviceModel = Build.MODEL.toLowerCase();
+    if (deviceModel.contains("nexus 5x") ||
+      deviceModel.contains("nexus 6p")) {
+      return true;
+    }
+    return false;
   }
 
   @Override
@@ -309,13 +323,15 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
   private void switchView() {
     stopCamera();
     if (this.isBackCamera) {
+      this.isBackCamera = !this.isBackCamera;
       this.startCamera(1, false);
       setFlashButtons(false, false);
     } else {
+      this.isBackCamera = !this.isBackCamera;
       this.startCamera(0, false);
       setFlashButtons(true, false);
     }
-    this.isBackCamera = !this.isBackCamera;
+    
     startPreview(surfaceView.getHolder());
   }
 
@@ -363,7 +379,11 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
 
   private void setCameraOrientation() {
     int rotation = getWindowManager().getDefaultDisplay().getRotation();
-    camera.setDisplayOrientation(90);
+    if (isSensorRotated(this.isBackCamera)) {
+      camera.setDisplayOrientation(270);
+    } else {
+      camera.setDisplayOrientation(90);
+    }
     camera.startPreview();
   }
 
@@ -543,7 +563,12 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     case Surface.ROTATION_0:
       angle = 90;
       if (!this.isBackCamera) {
-        angle = 270;
+        if(isSensorRotated(false)) {
+          angle = 90;  
+        } else {
+          angle = 270;
+        }
+        
       }
       break;
     case Surface.ROTATION_90:
