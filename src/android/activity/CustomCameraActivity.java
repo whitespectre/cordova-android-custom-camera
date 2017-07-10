@@ -87,8 +87,19 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     }
 
     String deviceModel = Build.MODEL.toLowerCase();
-    if (deviceModel.contains("nexus 5x") ||
-      deviceModel.contains("nexus 6p")) {
+    if (deviceModel.contains("nexus 6p")) {
+      return true;
+    }
+    return false;
+  }
+
+  public boolean isBackSensorRotated(boolean isBackCamera) {
+    if (!isBackCamera) {
+      return false;
+    }
+
+    String deviceModel = Build.MODEL.toLowerCase();
+    if (deviceModel.contains("nexus 5x")) {
       return true;
     }
     return false;
@@ -379,7 +390,8 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
 
   private void setCameraOrientation() {
     int rotation = getWindowManager().getDefaultDisplay().getRotation();
-    if (isSensorRotated(this.isBackCamera)) {
+    if (isSensorRotated(this.isBackCamera) ||
+      isBackSensorRotated(this.isBackCamera)) {
       camera.setDisplayOrientation(270);
     } else {
       camera.setDisplayOrientation(90);
@@ -556,9 +568,17 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
     switch(rotation) {
     case Surface.ROTATION_180:
       angle = 90;
+      if (isSensorRotated(this.isBackCamera) ||
+        isBackSensorRotated(this.isBackCamera)) {
+        angle = 270;
+      }
       break;
     case Surface.ROTATION_270:
       angle = 180;
+      if (isSensorRotated(this.isBackCamera) || 
+        isBackSensorRotated(this.isBackCamera)) {
+        angle = 0;
+      }
       break;
     case Surface.ROTATION_0:
       angle = 90;
@@ -568,11 +588,16 @@ public class CustomCameraActivity extends Activity implements SurfaceHolder.Call
         } else {
           angle = 270;
         }
-        
+      } else if (isBackSensorRotated(this.isBackCamera)) {
+        angle = 270;
       }
       break;
     case Surface.ROTATION_90:
       angle = 0;
+      if (isBackSensorRotated(this.isBackCamera) ||
+        isSensorRotated(this.isBackCamera)) {
+        angle = 180;
+      }
       break;
     }
     return angle;
