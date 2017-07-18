@@ -41,10 +41,18 @@ public abstract class BaseCustomActivity extends Activity implements SurfaceHold
   protected TextView timerText;
   protected SurfaceView mSurfaceView;
   protected SurfaceHolder mSurfaceHolder;
+  protected View recordingDot;
   // recording
   protected MediaRecorder mMediaRecorder;
   protected boolean isBackCamera = false;
   protected Uri currentFileName;
+  protected CountDownTimer currentCounter;
+  // recording params
+  protected final int REC_MAX_DURATION = 181000;
+  protected final int REC_FPS = 30;
+  protected final int REC_VIDEO_BITRATE = 1700000;
+  protected final int REC_AUDIO_BITRATE = 98000;
+  protected final int REC_AUDIO_SAMPLE_RATE = 44100;
 
   protected void setFlashButtons(boolean flashOn, boolean flashOff) {
     if (flashOn) {
@@ -85,6 +93,7 @@ public abstract class BaseCustomActivity extends Activity implements SurfaceHold
     mSurfaceHolder.addCallback(this);
     mSurfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
+    recordingDot = (View)findViewById(fakeR.getId("id", "recordingDot"));
     timerText = (TextView) findViewById(fakeR.getId("id", "recordingTimer"));
     stopRecordingButton = (ImageButton) findViewById(fakeR.getId("id", "stopRecordingButton"));
     stopRecordingButton.setOnClickListener( new OnClickListener() {
@@ -143,7 +152,30 @@ public abstract class BaseCustomActivity extends Activity implements SurfaceHold
     });
   }
 
-  private File initFile() {
+  protected boolean hasEnoughtSpace() throws IOException {
+    String libraryFolder = getIntent().getStringExtra("LIBRARY_FOLDER");
+    File dir = new File(Environment.getExternalStorageDirectory(), libraryFolder);
+    File file = null;
+
+    if (!dir.exists() && !dir.mkdirs()) {
+      file = null;
+    } else {
+      file = new File(dir.getAbsolutePath(), "tempFile");
+      if(!file.exists()) {
+        file.createNewFile();
+      }
+      return file.getFreeSpace() > 62914560;
+    }
+
+    return false;
+  }
+
+  protected void refreshLibrary() {
+    Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE,currentFileName);
+    sendBroadcast(mediaScanIntent);
+  }
+
+  protected File initFile() {
     String libraryFolder = getIntent().getStringExtra("LIBRARY_FOLDER");
     File dir = new File(Environment.getExternalStorageDirectory(), libraryFolder);
     File file = null;
@@ -156,6 +188,37 @@ public abstract class BaseCustomActivity extends Activity implements SurfaceHold
       currentFileName = Uri.fromFile(file);
     }
     return file;
+  }
+
+  public void startTimer() {
+    currentCounter = new CountDownTimer(REC_MAX_DURATION, 500) {
+      public void onTick(long millisUntilFinished) {
+        if (millisUntilFinished > 170000 && millisUntilFinished < 177000 ) {
+          stopRecordingButton.setEnabled(true);
+        }
+
+        if (recordingDot.getVisibility() == View.VISIBLE) {
+          recordingDot.setVisibility(View.INVISIBLE);
+        } else {
+          recordingDot.setVisibility(View.VISIBLE);
+        }
+
+        String timeFormat = String.format("%d:%02d", 
+          TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished) -  
+          TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(millisUntilFinished)),
+          TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished) - 
+          TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished))); 
+        timerText.setText(timeFormat);
+        if(millisUntilFinished <= 10000) {
+          timerText.setTextColor(Color.parseColor("#FF0000"));
+        }
+     }
+
+      public void onFinish() {
+        stopRecordingButton.performClick();
+      }
+    };
+    currentCounter.start();
   }
 }
 
