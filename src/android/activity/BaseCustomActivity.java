@@ -27,6 +27,8 @@ import android.content.Context;
 import android.graphics.Color;
 import android.media.MediaRecorder;
 import android.os.Environment;
+import android.view.OrientationEventListener;
+import android.widget.Toast;
 
 public abstract class BaseCustomActivity extends Activity implements SurfaceHolder.Callback {
   protected FakeR fakeR;
@@ -47,12 +49,16 @@ public abstract class BaseCustomActivity extends Activity implements SurfaceHold
   protected boolean isBackCamera = false;
   protected Uri currentFileName;
   protected CountDownTimer currentCounter;
+  protected int rotation;
+  protected boolean isFlashOn = false;
   // recording params
   protected final int REC_MAX_DURATION = 181000;
   protected final int REC_FPS = 30;
   protected final int REC_VIDEO_BITRATE = 1700000;
   protected final int REC_AUDIO_BITRATE = 98000;
   protected final int REC_AUDIO_SAMPLE_RATE = 44100;
+  // orientation tracking
+  private OrientationListener orientationListener;
 
   protected void setFlashButtons(boolean flashOn, boolean flashOff) {
     if (flashOn) {
@@ -75,18 +81,29 @@ public abstract class BaseCustomActivity extends Activity implements SurfaceHold
   abstract void startPreview(SurfaceHolder holder);
   abstract void switchFlash();
   abstract void cancelRecordingProcess();
+  abstract boolean hasFrontCamera();
 
+  @Override
   public void surfaceCreated(SurfaceHolder holder) {
     startPreview(holder);
   }
 
+  @Override
   public void surfaceChanged(SurfaceHolder holder, int arg1, int arg2, int arg3) {
     startPreview(holder);
+  }
+
+  public void showToast(String key) {
+    String tooltip = getIntent().getStringExtra(key);
+    Toast.makeText(this, tooltip, Toast.LENGTH_LONG).show();
   }
 
   public void init() {
     fakeR = new FakeR(this);
     setContentView(fakeR.getId("layout", "custom_camera"));
+
+    //orientation listener
+    orientationListener = new OrientationListener(this);
 
     mSurfaceView = (SurfaceView)findViewById(fakeR.getId("id", "surfaceView"));
     mSurfaceHolder = mSurfaceView.getHolder();
@@ -150,6 +167,15 @@ public abstract class BaseCustomActivity extends Activity implements SurfaceHold
         cancelRecordingProcess();
       }
     });
+
+    showToast("TOOLTIP");
+    if (!hasFrontCamera()) {
+      isBackCamera = true;
+      switchViewButton.setVisibility(View.GONE);
+    } else {
+      isBackCamera = false;
+      setFlashButtons(false, false);
+    }
   }
 
   protected boolean hasEnoughtSpace() throws IOException {
@@ -219,6 +245,34 @@ public abstract class BaseCustomActivity extends Activity implements SurfaceHold
       }
     };
     currentCounter.start();
+  }
+
+  private class OrientationListener extends OrientationEventListener{
+    public OrientationListener(Context context) { super(context); }
+
+    @Override public void onOrientationChanged(int orientation) {
+      if( (orientation < 35 || orientation > 325) && rotation != Surface.ROTATION_0){
+        rotation = Surface.ROTATION_0;
+      } else if( orientation > 145 && orientation < 215 && rotation != Surface.ROTATION_180){
+        rotation = Surface.ROTATION_180;
+      } else if(orientation > 55 && orientation < 125 && rotation != Surface.ROTATION_270){
+        rotation = Surface.ROTATION_270;
+      } else if(orientation > 235 && orientation < 305 && rotation != Surface.ROTATION_90){
+        rotation = Surface.ROTATION_90;
+      }
+    }
+  }
+
+  @Override
+  public void onStart() {
+    orientationListener.enable();
+    super.onStart();
+  }
+
+  @Override 
+  protected void onStop() {
+    orientationListener.disable();
+    super.onStop();
   }
 }
 

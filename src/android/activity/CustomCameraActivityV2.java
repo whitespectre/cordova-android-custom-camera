@@ -45,6 +45,7 @@ import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraMetadata;
 import android.support.annotation.NonNull;
 import android.hardware.camera2.CameraCaptureSession;
 import java.util.Arrays;
@@ -55,13 +56,13 @@ import android.media.MediaRecorder;
 public class CustomCameraActivityV2 extends BaseCustomActivity {
   private final String TAG = "CustomCameraActivityV2";
   // camera 2 variables
-  private Semaphore mCameraOpenCloseLock = new Semaphore(1);
   private String mCameraId;
   private CameraDevice mCameraDevice;
   private CaptureRequest.Builder mPreviewRequestBuilder;
   private CameraCaptureSession mCaptureSession;
   private CaptureRequest mPreviewRequest;
   private Size selectedSize;
+  private Integer mSensorOrientation;
 
   private CameraCaptureSession.CaptureCallback mCaptureCallback
     = new CameraCaptureSession.CaptureCallback() {
@@ -71,21 +72,18 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
     @Override
     public void onOpened(@NonNull CameraDevice cameraDevice) {
       // This method is called when the camera is opened.  We start camera preview here.
-      mCameraOpenCloseLock.release();
       mCameraDevice = cameraDevice;
       createCameraPreviewSession();
     }
 
     @Override
     public void onDisconnected(@NonNull CameraDevice cameraDevice) {
-      mCameraOpenCloseLock.release();
       cameraDevice.close();
       mCameraDevice = null;
     }
 
     @Override
     public void onError(@NonNull CameraDevice cameraDevice, int error) {
-      mCameraOpenCloseLock.release();
       cameraDevice.close();
       mCameraDevice = null;
       CustomCameraActivityV2.this.finish();
@@ -113,8 +111,16 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
     startPreview(null);
   }
 
+  @Override
+  public void onPause() {
+    super.onPause();
+    isFlashOn = false;
+    stopRecording(false);
+    stopCamera();
+  }
 
-  private void selectCamera(int cameraView, boolean isFlashOn) {
+
+  private void selectCamera(int cameraView) {
     CameraManager manager = (CameraManager) this.getSystemService(Context.CAMERA_SERVICE);
     try {
       mCameraId = manager.getCameraIdList()[cameraView];
@@ -131,12 +137,26 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
     }
 
     try {
-      mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+      mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO);
+      mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
+      if (isFlashOn) {
+        mPreviewRequestBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_TORCH);    
+      }
+
       mPreviewRequest = mPreviewRequestBuilder.build();
       mCaptureSession.setRepeatingRequest(mPreviewRequest, mCaptureCallback, null);
     } catch (CameraAccessException e) {
         e.printStackTrace();
     }
+  }
+
+  protected void setPreviewSize(Size camSize) {
+    Display display = getWindowManager().getDefaultDisplay();
+    Point size = new Point();
+    display.getSize(size);
+
+    double height = ((double)camSize.getWidth()/ camSize.getHeight()) * size.x;
+    mSurfaceHolder.setFixedSize(size.x, (int)height);
   }
 
   private void createCameraPreviewSession() {
@@ -164,24 +184,23 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
     }
   }
 
-  private void startCamera(int cameraView, boolean isFlashOn) {
+  private void startCamera(int cameraView) {
     try {
-      selectCamera(cameraView, isFlashOn);
+      selectCamera(cameraView);
       CameraManager manager = (CameraManager) this.getSystemService(Context.CAMERA_SERVICE);
       try {
-        if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
-          throw new RuntimeException("Time out waiting to lock camera opening.");
-        }
+        CameraCharacteristics characteristics = manager.getCameraCharacteristics(mCameraId);
+        
         manager.openCamera(mCameraId, mStateCallback, null);
 
-        CameraCharacteristics characteristics = manager.getCameraCharacteristics(mCameraId);
         StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
         setOptimalResolution(map.getOutputSizes(MediaRecorder.class));
+        mSensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+
+        setPreviewSize(selectedSize);
 
       } catch (CameraAccessException e) {
         e.printStackTrace();
-      } catch (InterruptedException e) {
-        throw new RuntimeException("Interrupted while trying to lock camera opening.", e);
       }
     } catch(Exception e) {
       e.printStackTrace();
@@ -190,9 +209,9 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
 
   public void startPreview(SurfaceHolder holder) {
     if (isBackCamera) {
-      this.startCamera(0, false);  
+      this.startCamera(0);  
     } else {
-      this.startCamera(1, false);
+      this.startCamera(1);
     }
   }
 
@@ -202,30 +221,24 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
   }
 
   public void stopCamera() {
-    try {
-      mCameraOpenCloseLock.acquire();
-      if (null != mCaptureSession) {
-        mCaptureSession.close();
-        mCaptureSession = null;
-      }
-      if (null != mCameraDevice) {
-        mCameraDevice.close();
-        mCameraDevice = null;
-      }
+    if (null != mCaptureSession) {
+      mCaptureSession.close();
+      mCaptureSession = null;
+    }
+    if (null != mCameraDevice) {
+      mCameraDevice.close();
+      mCameraDevice = null;
+    }
 
-      if (null != mMediaRecorder) {
-        mMediaRecorder.release();
-        mMediaRecorder = null;
-        recording = false;
-      }
-    } catch (InterruptedException e) {
-      throw new RuntimeException("Interrupted while trying to lock camera closing.", e);
-    } finally {
-      mCameraOpenCloseLock.release();
+    if (null != mMediaRecorder) {
+      mMediaRecorder.release();
+      mMediaRecorder = null;
+      recording = false;
     }
   }
 
   public void switchView() {
+    isFlashOn = false;
     stopCamera();
     this.isBackCamera = !this.isBackCamera;
     startPreview(null);
@@ -255,7 +268,10 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
 
       if (!finished) {
         startRecordingButton.setVisibility(View.VISIBLE);
-        cancelRecordingButton.setVisibility(View.VISIBLE);  
+        cancelRecordingButton.setVisibility(View.VISIBLE);
+        if (hasFrontCamera()) {
+          switchViewButton.setVisibility(View.VISIBLE);  
+        }
       }
       
       if (finished) {
@@ -361,7 +377,14 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
   }
 
   public void switchFlash() {
-
+    isFlashOn = !isFlashOn;
+    stopCamera();
+    this.startCamera(0);
+    if (isFlashOn) {
+      setFlashButtons(false, true);
+    } else {
+      setFlashButtons(true, false);
+    }
   }
 
   public void cancelRecordingProcess() {
@@ -379,24 +402,17 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
 
     mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
     mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
-    
     mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4); 
     mMediaRecorder.setOutputFile(initFile().getAbsolutePath());
     mMediaRecorder.setVideoEncodingBitRate(REC_VIDEO_BITRATE);
     mMediaRecorder.setVideoFrameRate(REC_FPS);
     mMediaRecorder.setVideoSize(selectedSize.getWidth(), selectedSize.getHeight());
-
     mMediaRecorder.setAudioEncodingBitRate(REC_AUDIO_BITRATE);
     mMediaRecorder.setAudioSamplingRate(REC_AUDIO_SAMPLE_RATE);
-
     mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
     mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-
-    mMediaRecorder.setOrientationHint(0);
-
+    mMediaRecorder.setOrientationHint(getRecordingAngle());
     mMediaRecorder.setMaxDuration(REC_MAX_DURATION);
-    
-    // mMediaRecorder.setOrientationHint(getRecordingAngle());
 
     try {
       mMediaRecorder.prepare();
@@ -405,4 +421,27 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
     }
   }
 
+  private int getRecordingAngle() {
+    int angle = 0;
+    switch(rotation) {
+      case Surface.ROTATION_0:
+        angle = 0;
+        break;
+      case Surface.ROTATION_90:
+        angle = 90;
+        break;
+      case Surface.ROTATION_180:
+        angle = 180;
+        break;
+      case Surface.ROTATION_270:
+        angle = 270;
+        break;
+    }
+    if (!this.isBackCamera) {
+      angle = (mSensorOrientation + angle) % 360;
+    } else {
+      angle = (mSensorOrientation - angle + 360) % 360;
+    }
+    return angle;
+  }
 }
