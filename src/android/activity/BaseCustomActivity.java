@@ -30,7 +30,7 @@ import android.os.Environment;
 import android.view.OrientationEventListener;
 import android.widget.Toast;
 
-public abstract class BaseCustomActivity extends Activity implements SurfaceHolder.Callback {
+public abstract class BaseCustomActivity extends Activity {
   protected FakeR fakeR;
   protected boolean recording = false;
   // UI Buttons
@@ -83,16 +83,6 @@ public abstract class BaseCustomActivity extends Activity implements SurfaceHold
   abstract void cancelRecordingProcess();
   abstract boolean hasFrontCamera();
 
-  @Override
-  public void surfaceCreated(SurfaceHolder holder) {
-    startPreview(holder);
-  }
-
-  @Override
-  public void surfaceChanged(SurfaceHolder holder, int arg1, int arg2, int arg3) {
-    startPreview(holder);
-  }
-
   public void showToast(String key) {
     String tooltip = getIntent().getStringExtra(key);
     Toast.makeText(this, tooltip, Toast.LENGTH_LONG).show();
@@ -107,7 +97,7 @@ public abstract class BaseCustomActivity extends Activity implements SurfaceHold
 
     mSurfaceView = (SurfaceView)findViewById(fakeR.getId("id", "surfaceView"));
     mSurfaceHolder = mSurfaceView.getHolder();
-    mSurfaceHolder.addCallback(this);
+    // mSurfaceHolder.addCallback(this);
     mSurfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
     recordingDot = (View)findViewById(fakeR.getId("id", "recordingDot"));

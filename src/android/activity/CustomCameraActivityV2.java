@@ -1,5 +1,6 @@
 package com.cga;
 
+import com.cga.AutoFitTextureView;
 import com.cga.FakeR;
 import android.app.Activity;
 import android.os.AsyncTask;
@@ -38,7 +39,13 @@ import java.util.ArrayList;
 import android.graphics.Color;
 import android.os.Build;
 import android.util.Size;
+import android.graphics.SurfaceTexture;
+import android.util.SizeF;
+import android.os.HandlerThread;
+import android.os.Handler;
+import android.view.TextureView;
 
+import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraAccessException;
@@ -55,6 +62,7 @@ import android.media.MediaRecorder;
 
 public class CustomCameraActivityV2 extends BaseCustomActivity {
   private final String TAG = "CustomCameraActivityV2";
+  private AutoFitTextureView mTextureView;
   // camera 2 variables
   private String mCameraId;
   private CameraDevice mCameraDevice;
@@ -63,9 +71,30 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
   private CaptureRequest mPreviewRequest;
   private Size selectedSize;
   private Integer mSensorOrientation;
+  // threading for perf
+  private HandlerThread mBackgroundThread;
+  private Handler mBackgroundHandler;
+  // container of video preview
+  private TextureView.SurfaceTextureListener mSurfaceTextureListener
+          = new TextureView.SurfaceTextureListener() {
+      @Override
+      public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture,
+                                            int width, int height) {
+        startPreview(width, height);
+      }
 
-  private CameraCaptureSession.CaptureCallback mCaptureCallback
-    = new CameraCaptureSession.CaptureCallback() {
+      @Override
+      public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture,
+                                              int width, int height) {}
+      
+      @Override
+      public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {}
+
+      @Override
+      public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
+        stopCamera();
+        return true;
+      }
   };
   
   private final CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
@@ -89,26 +118,47 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
       CustomCameraActivityV2.this.finish();
     }
   };
-  
+
+  private void startBackgroundThread() {
+    mBackgroundThread = new HandlerThread("CameraBackground");
+    mBackgroundThread.start();
+    mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
+  }
+
+  private void stopBackgroundThread() {
+    mBackgroundThread.quitSafely();
+    try {
+      mBackgroundThread.join();
+      mBackgroundThread = null;
+      mBackgroundHandler = null;
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+  }
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     init();
   }
 
-  public void showToast(String key) {
-    String tooltip = getIntent().getStringExtra(key);
-    Toast.makeText(this, tooltip, Toast.LENGTH_LONG).show();
-  }
-
   public void init() {
     super.init();
+    // with camera 2 we will be using AutoFixTextureView to preserve aspect ratio
+    mTextureView = (AutoFitTextureView) findViewById(fakeR.getId("id", "texture"));
+    mTextureView.setVisibility(View.VISIBLE);
   }
 
   @Override
   public void onResume() {
     super.onResume();
-    startPreview(null);
+    startBackgroundThread();
+    // where camera gets init
+    if (mTextureView.isAvailable()) {
+        startPreview(mTextureView.getWidth(), mTextureView.getHeight());
+      } else {
+        mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
+      }
+    
   }
 
   @Override
@@ -117,8 +167,8 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
     isFlashOn = false;
     stopRecording(false);
     stopCamera();
+    stopBackgroundThread();
   }
-
 
   private void selectCamera(int cameraView) {
     CameraManager manager = (CameraManager) this.getSystemService(Context.CAMERA_SERVICE);
@@ -131,7 +181,7 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
     }
   }
 
-  private void updatePreview() {
+  private void updatePreview(CameraCaptureSession.CaptureCallback callback) {
     if (null == mCameraDevice) {
       return;
     }
@@ -142,34 +192,28 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
       if (isFlashOn) {
         mPreviewRequestBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_TORCH);    
       }
-
       mPreviewRequest = mPreviewRequestBuilder.build();
-      mCaptureSession.setRepeatingRequest(mPreviewRequest, mCaptureCallback, null);
+      mCaptureSession.setRepeatingRequest(mPreviewRequest, callback, mBackgroundHandler);
     } catch (CameraAccessException e) {
         e.printStackTrace();
     }
   }
 
-  protected void setPreviewSize(Size camSize) {
-    Display display = getWindowManager().getDefaultDisplay();
-    Point size = new Point();
-    display.getSize(size);
-
-    double height = ((double)camSize.getWidth()/ camSize.getHeight()) * size.x;
-    mSurfaceHolder.setFixedSize(size.x, (int)height);
-  }
-
   private void createCameraPreviewSession() {
     try {
-      mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-      mPreviewRequestBuilder.addTarget(mSurfaceHolder.getSurface());
+      mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
+      
+      SurfaceTexture texture = mTextureView.getSurfaceTexture();
+      texture.setDefaultBufferSize(selectedSize.getWidth(), selectedSize.getHeight());
+      Surface previewSurface = new Surface(texture); 
+      mPreviewRequestBuilder.addTarget(previewSurface);
 
-      mCameraDevice.createCaptureSession(Arrays.asList(mSurfaceHolder.getSurface()),
+      mCameraDevice.createCaptureSession(Arrays.asList(previewSurface),
         new CameraCaptureSession.StateCallback() {
           @Override
           public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
             mCaptureSession = cameraCaptureSession;
-            updatePreview();
+            updatePreview(null);
           }
 
           @Override
@@ -177,8 +221,7 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
                   @NonNull CameraCaptureSession cameraCaptureSession) {
               showToast("Failed");
           }
-        }, null
-      );
+        }, mBackgroundHandler);
     } catch(CameraAccessException e) {
       e.printStackTrace();
     }
@@ -186,6 +229,7 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
 
   private void startCamera(int cameraView) {
     try {
+      Log.d(TAG, "Starting the camera here");
       selectCamera(cameraView);
       CameraManager manager = (CameraManager) this.getSystemService(Context.CAMERA_SERVICE);
       try {
@@ -194,11 +238,9 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
         manager.openCamera(mCameraId, mStateCallback, null);
 
         StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-        setOptimalResolution(map.getOutputSizes(MediaRecorder.class));
+        Size selectedSize = chooseOptimalResolution(map.getOutputSizes(MediaRecorder.class));
         mSensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
-
-        setPreviewSize(selectedSize);
-
+        mTextureView.setAspectRatio(selectedSize.getHeight(), selectedSize.getWidth());
       } catch (CameraAccessException e) {
         e.printStackTrace();
       }
@@ -208,6 +250,7 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
   }
 
   public void startPreview(SurfaceHolder holder) {
+    Log.d(TAG, "startPreview");
     if (isBackCamera) {
       this.startCamera(0);  
     } else {
@@ -215,9 +258,13 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
     }
   }
 
-  @Override
-  public void surfaceDestroyed(SurfaceHolder holder) {
-    stopCamera();
+  public void startPreview(int width, int height) {
+    Log.d(TAG, "startPreview");
+    if (isBackCamera) {
+      this.startCamera(0);  
+    } else {
+      this.startCamera(1);
+    }
   }
 
   public void stopCamera() {
@@ -238,6 +285,7 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
   }
 
   public void switchView() {
+    Log.d(TAG, "switchView");
     isFlashOn = false;
     stopCamera();
     this.isBackCamera = !this.isBackCamera;
@@ -287,9 +335,9 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
     }
   }
 
-  private void setOptimalResolution(Size[] choices) {
+  private Size chooseOptimalResolution(Size[] choices) {
     if(selectedSize != null) {
-      return;
+      return selectedSize;
     }
 
     for (Size size : choices) {
@@ -302,10 +350,11 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
         //preferred size width
         if(size.getWidth() == 640 && size.getHeight() == 480) {
           selectedSize = size;
-          return;
+          return selectedSize;
         }
       }
     }
+    return selectedSize;
   }
 
   private void closePreviewSession() {
@@ -337,9 +386,16 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
       switchViewButton.setVisibility(View.GONE);
 
       mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
+
+      SurfaceTexture texture = mTextureView.getSurfaceTexture();
+      texture.setDefaultBufferSize(selectedSize.getWidth(), selectedSize.getHeight());
+
       List<Surface> surfaces = new ArrayList<Surface>();
-      surfaces.add(mSurfaceHolder.getSurface());
-      mPreviewRequestBuilder.addTarget(mSurfaceHolder.getSurface());
+      
+      Surface previewSurface = new Surface(texture);
+      surfaces.add(previewSurface);
+      mPreviewRequestBuilder.addTarget(previewSurface);
+
       // Set up Surface for the MediaRecorder
       Surface recorderSurface = mMediaRecorder.getSurface();
       surfaces.add(recorderSurface);
@@ -349,17 +405,23 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
         @Override
         public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
           mCaptureSession = cameraCaptureSession;
-          updatePreview();
-          recording = true;
-          mMediaRecorder.start();
-          startTimer();
+          updatePreview(null);
+
+          CustomCameraActivityV2.this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+              recording = true;
+              mMediaRecorder.start();
+              startTimer();
+            }
+          });
         }
 
         @Override
         public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
-          showToast("Failed");
+          showToast("ERROR_GENERAL");
         }
-      }, null);
+      }, mBackgroundHandler);
     } catch (CameraAccessException e) {
       showToast("ERROR_GENERAL");
     } catch (IOException e) {

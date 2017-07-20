@@ -31,6 +31,7 @@
     <source-file src="src/android/activity/CustomCameraActivity.java" target-dir="src/com/cga"/>
     <source-file src="src/android/activity/CustomCameraActivityV2.java" target-dir="src/com/cga"/>
     <source-file src="src/android/activity/FakeR.java" target-dir="src/com/cga" />
+    <source-file src="src/android/activity/AutoFitTextureView.java" target-dir="src/com/cga" />
     <source-file src="src/android/activity/custom_camera.xml" target-dir="res/layout"/>
     <source-file src="src/android/activity/custom_camera_v2.xml" target-dir="res/layout"/>
     <source-file src="src/android/res/values/customcamera_strings_en.xml" target-dir="res/values"/>

@@ -10,9 +10,16 @@
         android:layout_height="match_parent"
         android:gravity="center">
         <SurfaceView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/surfaceView" />
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:visibility="gone"
+          android:id="@+id/surfaceView" />
+        <com.cga.AutoFitTextureView
+          android:id="@+id/texture"
+          android:visibility="gone"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_alignParentStart="true"/>
     </RelativeLayout>
 
     <LinearLayout
