@@ -12,6 +12,7 @@ import android.util.Log;
 import android.Manifest;
 
 import com.cga.CustomCameraActivity;
+import com.cga.CustomCameraActivityV2;
 
 import org.apache.cordova.PermissionHelper;
 import org.apache.cordova.PluginResult;
@@ -61,7 +62,14 @@ public class AndroidCamera extends CordovaPlugin {
     }
 
     private void recordVideo() throws JSONException {
-      Intent intent = new Intent(cordova.getActivity(), CustomCameraActivity.class);
+      Intent intent = null;
+
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        intent = new Intent(cordova.getActivity(), CustomCameraActivityV2.class);
+      } else {
+        intent = new Intent(cordova.getActivity(), CustomCameraActivity.class);
+      }
+      
       intent.putExtra("LIBRARY_FOLDER", args.getString(0));
       intent.putExtra("CANCEL_TEXT", args.getString(1));
       intent.putExtra("TOOLTIP", args.getString(2));
