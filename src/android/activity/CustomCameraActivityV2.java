@@ -3,48 +3,28 @@ package com.cga;
 import com.cga.AutoFitTextureView;
 import com.cga.FakeR;
 import android.app.Activity;
-import android.os.AsyncTask;
 import android.os.Bundle;
-
 import java.io.IOException;
 import java.lang.Exception;
 import android.util.Log;
-import android.view.SurfaceView;
+import java.util.Arrays;
 import android.view.SurfaceHolder;
 import java.lang.RuntimeException;
 import java.io.File;
-import android.widget.Toast;
-import android.os.Environment;
-import android.view.View.OnClickListener;
-import android.widget.Button;
 import android.view.View;
 import android.view.Surface;
-import java.util.Date;
-import java.text.SimpleDateFormat;
-import android.content.res.Configuration;
-import android.content.pm.ActivityInfo;
-import android.net.Uri;
 import android.content.Intent;
-import android.os.CountDownTimer;
-import android.widget.TextView;
-import java.util.concurrent.TimeUnit;
-import android.widget.ImageButton;
-import android.view.OrientationEventListener;
 import android.content.Context;
 import android.view.Display;
-import android.graphics.Point;
-import java.lang.Math;
 import java.util.List;
 import java.util.ArrayList;
 import android.graphics.Color;
-import android.os.Build;
 import android.util.Size;
 import android.graphics.SurfaceTexture;
 import android.util.SizeF;
 import android.os.HandlerThread;
 import android.os.Handler;
 import android.view.TextureView;
-
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraCharacteristics;
@@ -55,8 +35,6 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraMetadata;
 import android.support.annotation.NonNull;
 import android.hardware.camera2.CameraCaptureSession;
-import java.util.Arrays;
-import java.util.concurrent.Semaphore;
 import android.media.MediaRecorder;
 
 
@@ -249,7 +227,7 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
     }
   }
 
-  public void startPreview(SurfaceHolder holder) {
+  protected void startPreview(SurfaceHolder holder) {
     Log.d(TAG, "startPreview");
     if (isBackCamera) {
       this.startCamera(0);  
@@ -267,7 +245,7 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
     }
   }
 
-  public void stopCamera() {
+  protected void stopCamera() {
     if (null != mCaptureSession) {
       mCaptureSession.close();
       mCaptureSession = null;
@@ -284,7 +262,7 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
     }
   }
 
-  public void switchView() {
+  protected void switchView() {
     Log.d(TAG, "switchView");
     isFlashOn = false;
     stopCamera();
@@ -298,7 +276,7 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
     }
   }
 
-  public void stopRecording(boolean finished) {
+  protected void stopRecording(boolean finished) {
     if (recording == true) {
       recording = false;
       stopRecordingButton.setVisibility(View.GONE);
@@ -364,7 +342,7 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
     }
   }
 
-  public void startRecording() {
+  protected void startRecording() {
     setFlashButtons(false, false);
 
     if (null == mCameraDevice) {
@@ -429,7 +407,7 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
     }
   }
 
-  public boolean hasFrontCamera() {
+  protected boolean hasFrontCamera() {
     CameraManager manager = (CameraManager) this.getSystemService(Context.CAMERA_SERVICE);
     try {
       return manager.getCameraIdList().length > 1;
@@ -449,7 +427,7 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
     }
   }
 
-  public void cancelRecordingProcess() {
+  protected void cancelRecordingProcess() {
     stopRecording(false);
     stopCamera();
     Intent data = new Intent();

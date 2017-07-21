@@ -74,14 +74,14 @@ public abstract class BaseCustomActivity extends Activity {
     }
   }
 
-  abstract void stopCamera();
-  abstract void stopRecording(boolean finished);
-  abstract void startRecording();
-  abstract void switchView();
-  abstract void startPreview(SurfaceHolder holder);
-  abstract void switchFlash();
-  abstract void cancelRecordingProcess();
-  abstract boolean hasFrontCamera();
+  protected abstract void stopCamera();
+  protected abstract void stopRecording(boolean finished);
+  protected abstract void startRecording();
+  protected abstract void switchView();
+  protected abstract void startPreview(SurfaceHolder holder);
+  protected abstract void switchFlash();
+  protected abstract void cancelRecordingProcess();
+  protected abstract boolean hasFrontCamera();
 
   public void showToast(String key) {
     String tooltip = getIntent().getStringExtra(key);
@@ -97,7 +97,6 @@ public abstract class BaseCustomActivity extends Activity {
 
     mSurfaceView = (SurfaceView)findViewById(fakeR.getId("id", "surfaceView"));
     mSurfaceHolder = mSurfaceView.getHolder();
-    // mSurfaceHolder.addCallback(this);
     mSurfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
     recordingDot = (View)findViewById(fakeR.getId("id", "recordingDot"));
