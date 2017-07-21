@@ -36,7 +36,8 @@ import android.hardware.camera2.CameraMetadata;
 import android.support.annotation.NonNull;
 import android.hardware.camera2.CameraCaptureSession;
 import android.media.MediaRecorder;
-
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 public class CustomCameraActivityV2 extends BaseCustomActivity {
   private final String TAG = "CustomCameraActivityV2";
@@ -52,6 +53,7 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
   // threading for perf
   private HandlerThread mBackgroundThread;
   private Handler mBackgroundHandler;
+  private Semaphore mCameraOpenCloseLock = new Semaphore(1);
   // container of video preview
   private TextureView.SurfaceTextureListener mSurfaceTextureListener
           = new TextureView.SurfaceTextureListener() {
@@ -78,19 +80,21 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
   private final CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
     @Override
     public void onOpened(@NonNull CameraDevice cameraDevice) {
-      // This method is called when the camera is opened.  We start camera preview here.
+      mCameraOpenCloseLock.release();
       mCameraDevice = cameraDevice;
       createCameraPreviewSession();
     }
 
     @Override
     public void onDisconnected(@NonNull CameraDevice cameraDevice) {
+      mCameraOpenCloseLock.release();
       cameraDevice.close();
       mCameraDevice = null;
     }
 
     @Override
     public void onError(@NonNull CameraDevice cameraDevice, int error) {
+      mCameraOpenCloseLock.release();
       cameraDevice.close();
       mCameraDevice = null;
       CustomCameraActivityV2.this.finish();
@@ -207,12 +211,13 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
 
   private void startCamera(int cameraView) {
     try {
-      Log.d(TAG, "Starting the camera here");
       selectCamera(cameraView);
       CameraManager manager = (CameraManager) this.getSystemService(Context.CAMERA_SERVICE);
       try {
         CameraCharacteristics characteristics = manager.getCameraCharacteristics(mCameraId);
-        
+        if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
+          throw new RuntimeException("Time out waiting to lock camera opening.");
+        }
         manager.openCamera(mCameraId, mStateCallback, null);
 
         StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
@@ -220,15 +225,17 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
         mSensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
         mTextureView.setAspectRatio(selectedSize.getHeight(), selectedSize.getWidth());
       } catch (CameraAccessException e) {
+        Intent data = new Intent();
         e.printStackTrace();
+        reportError();
       }
     } catch(Exception e) {
       e.printStackTrace();
+      reportError();
     }
   }
 
   protected void startPreview(SurfaceHolder holder) {
-    Log.d(TAG, "startPreview");
     if (isBackCamera) {
       this.startCamera(0);  
     } else {
@@ -237,7 +244,6 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
   }
 
   public void startPreview(int width, int height) {
-    Log.d(TAG, "startPreview");
     if (isBackCamera) {
       this.startCamera(0);  
     } else {
@@ -246,24 +252,30 @@ public class CustomCameraActivityV2 extends BaseCustomActivity {
   }
 
   protected void stopCamera() {
-    if (null != mCaptureSession) {
-      mCaptureSession.close();
-      mCaptureSession = null;
-    }
-    if (null != mCameraDevice) {
-      mCameraDevice.close();
-      mCameraDevice = null;
-    }
+    try {
+      mCameraOpenCloseLock.acquire();
+      if (null != mCaptureSession) {
+        mCaptureSession.close();
+        mCaptureSession = null;
+      }
+      if (null != mCameraDevice) {
+        mCameraDevice.close();
+        mCameraDevice = null;
+      }
 
-    if (null != mMediaRecorder) {
-      mMediaRecorder.release();
-      mMediaRecorder = null;
-      recording = false;
+      if (null != mMediaRecorder) {
+        mMediaRecorder.release();
+        mMediaRecorder = null;
+        recording = false;
+      }
+    } catch (InterruptedException e) {
+      throw new RuntimeException("Interrupted while trying to lock camera closing.", e);
+    } finally {
+      mCameraOpenCloseLock.release();
     }
   }
 
   protected void switchView() {
-    Log.d(TAG, "switchView");
     isFlashOn = false;
     stopCamera();
     this.isBackCamera = !this.isBackCamera;

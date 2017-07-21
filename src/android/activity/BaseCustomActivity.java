@@ -88,6 +88,13 @@ public abstract class BaseCustomActivity extends Activity {
     Toast.makeText(this, tooltip, Toast.LENGTH_LONG).show();
   }
 
+  public void reportError() {
+    showToast("ERROR_GENERAL");
+    Intent data = new Intent();
+    setResult(5, data);
+    finish();
+  }
+
   public void init() {
     fakeR = new FakeR(this);
     setContentView(fakeR.getId("layout", "custom_camera"));
