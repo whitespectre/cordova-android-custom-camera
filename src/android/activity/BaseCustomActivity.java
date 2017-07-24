@@ -206,7 +206,7 @@ public abstract class BaseCustomActivity extends Activity {
       file = null;
     } else {
       file = new File(dir.getAbsolutePath(), new SimpleDateFormat(
-        "'IMG_'yyyyMMddHHmmss'.mp4'").format(new Date()));
+        "'VIDEO_'yyyyMMddHHmmss'.mp4'").format(new Date()));
       currentFileName = Uri.fromFile(file);
     }
     return file;
